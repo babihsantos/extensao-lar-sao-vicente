@@ -41,30 +41,10 @@ CATEGORIAS = [
 ]
 DIAS_ALERTA = 30
 
-# ---------------------------------------------------------
-# 👥 UTILIZADORES
-# Podes mover isto para .streamlit/secrets.toml:
-#     [usuarios]
-#     admin = "senha123"
-#     coordenador = "outrasenha"
-# ---------------------------------------------------------
-USUARIOS_PADRAO = {
-    "admin": "larsv2024",
-    "coordenador": "doacoes2024",
-}
 
 
-def obter_usuarios() -> dict:
-    try:
-        return dict(st.secrets["usuarios"])
-    except Exception:
-        return USUARIOS_PADRAO
 
 
-# =========================================================
-# CSS
-# =========================================================
-st.markdown(
     """
     <style>
         .block-container { padding-top: 1.2rem; padding-bottom: 2rem; }
