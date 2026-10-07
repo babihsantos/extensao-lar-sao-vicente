@@ -138,6 +138,7 @@ def init_db():
         )
 
 
+@st.cache_data(ttl=60)
 def carregar_inventario() -> pd.DataFrame:
     with conectar() as conn:
         return pd.read_sql_query(
@@ -145,6 +146,7 @@ def carregar_inventario() -> pd.DataFrame:
         )
 
 
+@st.cache_data(ttl=60)
 def carregar_movimentos() -> pd.DataFrame:
     with conectar() as conn:
         return pd.read_sql_query(
@@ -204,7 +206,8 @@ def registar_entrada(item, categoria, quantidade, validade, doador):
             ),
         )
 
-    fazer_backup()
+    # Limpa o cache para que a interface leia os novos dados
+    st.cache_data.clear()
 
 
 def dar_baixa(item_id, quantidade, destino, observacoes):
@@ -248,7 +251,8 @@ def dar_baixa(item_id, quantidade, destino, observacoes):
             ),
         )
 
-    fazer_backup()
+    # Limpa o cache para que a interface leia os novos dados
+    st.cache_data.clear()
     return True, "Baixa registada com sucesso."
 
 
@@ -281,14 +285,17 @@ def apagar_item(item_id):
             ),
         )
 
-    fazer_backup()
+    # Limpa o cache para que a interface leia os novos dados
+    st.cache_data.clear()
     return True, "Item eliminado."
 
 
 # =========================================================
 # GERAÇÃO DE PDF
 # =========================================================
+@st.cache_resource
 def _registar_fonte_unicode():
+    """Registra a fonte apenas uma vez para otimizar a geração de PDFs."""
     candidatos = [
         ("DejaVu", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
         ("Arial", "C:/Windows/Fonts/arial.ttf"),
