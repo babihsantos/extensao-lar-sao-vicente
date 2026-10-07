@@ -28,7 +28,6 @@ CATEGORIAS = [
 DIAS_ALERTA = 30
 
 # Conexão com o banco de dados na nuvem (Supabase)
-# O nome "supabase_connection" deve ser o mesmo usado no Secrets
 conn = st.connection("supabase_connection", type=SupabaseConnection)
 
 # =========================================================
@@ -58,108 +57,137 @@ st.markdown(
 # =========================================================
 @st.cache_data(ttl=60)
 def carregar_inventario() -> pd.DataFrame:
-    resposta = conn.table("inventario").select("*").order("categoria").order("item").execute()
-    return pd.DataFrame(resposta.data)
+    try:
+        resposta = conn.table("inventario").select("*").order("categoria").order("item").execute()
+        return pd.DataFrame(resposta.data)
+    except Exception as e:
+        st.error(f"🚨 Erro ao carregar inventário: {e}")
+        return pd.DataFrame()
 
 @st.cache_data(ttl=60)
 def carregar_movimentos() -> pd.DataFrame:
-    resposta = conn.table("movimentos").select("*").order("data", desc=True).execute()
-    return pd.DataFrame(resposta.data)
+    try:
+        resposta = conn.table("movimentos").select("*").order("data", desc=True).execute()
+        return pd.DataFrame(resposta.data)
+    except Exception as e:
+        st.error(f"🚨 Erro ao carregar movimentos: {e}")
+        return pd.DataFrame()
 
 def registar_entrada(item, categoria, quantidade, validade, doador):
     validade_str = str(validade) if validade else None
     
-    # Busca um item existente com o mesmo nome e validade
-    resposta = conn.table("inventario").select("id, quantidade").eq("item", item).eq("validade", validade_str).execute()
-    
-    if resposta.data:
-        # Item já existe: atualiza a quantidade
-        item_id = resposta.data[0]['id']
-        nova_qtd = resposta.data[0]['quantidade'] + quantidade
-        conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
-    else:
-        # Item novo: insere na tabela
-        conn.table("inventario").insert({
+    try:
+        # Busca um item existente com o mesmo nome e validade
+        query = conn.table("inventario").select("id, quantidade").eq("item", item.strip())
+        
+        # CORREÇÃO: Tratar valor nulo corretamente no PostgREST
+        if validade_str:
+            query = query.eq("validade", validade_str)
+        else:
+            query = query.is_("validade", "null")
+            
+        resposta = query.execute()
+        
+        if resposta.data:
+            # Item já existe: atualiza a quantidade
+            item_id = resposta.data[0]['id']
+            nova_qtd = resposta.data[0]['quantidade'] + quantidade
+            conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
+        else:
+            # Item novo: insere na tabela
+            conn.table("inventario").insert({
+                "id": str(uuid.uuid4()),
+                "item": item.strip(),
+                "categoria": categoria,
+                "quantidade": quantidade,
+                "validade": validade_str,
+                "doador": doador.strip() or "Anónimo",
+                "data_entrada": datetime.now().isoformat(timespec="seconds")
+            }).execute()
+        
+        # Regista o movimento de entrada
+        conn.table("movimentos").insert({
             "id": str(uuid.uuid4()),
+            "data": datetime.now().isoformat(timespec="seconds"),
+            "tipo": "Entrada",
             "item": item.strip(),
             "categoria": categoria,
             "quantidade": quantidade,
-            "validade": validade_str,
-            "doador": doador.strip() or "Anónimo",
-            "data_entrada": datetime.now().isoformat(timespec="seconds")
+            "pessoa": doador.strip() or "Anónimo",
+            "observacoes": "Doação registada"
         }).execute()
-    
-    # Regista o movimento de entrada
-    conn.table("movimentos").insert({
-        "id": str(uuid.uuid4()),
-        "data": datetime.now().isoformat(timespec="seconds"),
-        "tipo": "Entrada",
-        "item": item.strip(),
-        "categoria": categoria,
-        "quantidade": quantidade,
-        "pessoa": doador.strip() or "Anónimo",
-        "observacoes": "Doação registada"
-    }).execute()
-    
-    st.cache_data.clear()
+        
+        st.cache_data.clear()
+        return True, "Entrada registada com sucesso!"
+        
+    except Exception as e:
+        return False, f"Erro no banco de dados: {e}"
 
 def dar_baixa(item_id, quantidade, destino, observacoes):
-    resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
-    if not resposta.data:
-        return False, "Item não encontrado."
-    
-    item = resposta.data[0]['item']
-    categoria = resposta.data[0]['categoria']
-    stock_atual = resposta.data[0]['quantidade']
-    
-    if quantidade > stock_atual:
-        return False, f"Stock insuficiente (disponível: {stock_atual})."
-    
-    nova_qtd = stock_atual - quantidade
-    if nova_qtd == 0:
-        conn.table("inventario").delete().eq("id", item_id).execute()
-    else:
-        conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
-    
-    # Regista o movimento de saída
-    conn.table("movimentos").insert({
-        "id": str(uuid.uuid4()),
-        "data": datetime.now().isoformat(timespec="seconds"),
-        "tipo": "Saída",
-        "item": item,
-        "categoria": categoria,
-        "quantidade": quantidade,
-        "pessoa": destino.strip() or "—",
-        "observacoes": observacoes.strip() or "Baixa de stock"
-    }).execute()
-    
-    st.cache_data.clear()
-    return True, "Baixa registada com sucesso."
+    try:
+        resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
+        if not resposta.data:
+            return False, "Item não encontrado."
+        
+        item = resposta.data[0]['item']
+        categoria = resposta.data[0]['categoria']
+        stock_atual = resposta.data[0]['quantidade']
+        
+        if quantidade > stock_atual:
+            return False, f"Stock insuficiente (disponível: {stock_atual})."
+        
+        nova_qtd = stock_atual - quantidade
+        if nova_qtd == 0:
+            conn.table("inventario").delete().eq("id", item_id).execute()
+        else:
+            conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
+        
+        # Regista o movimento de saída
+        conn.table("movimentos").insert({
+            "id": str(uuid.uuid4()),
+            "data": datetime.now().isoformat(timespec="seconds"),
+            "tipo": "Saída",
+            "item": item,
+            "categoria": categoria,
+            "quantidade": quantidade,
+            "pessoa": destino.strip() or "—",
+            "observacoes": observacoes.strip() or "Baixa de stock"
+        }).execute()
+        
+        st.cache_data.clear()
+        return True, "Baixa registada com sucesso."
+        
+    except Exception as e:
+        return False, f"Erro no banco de dados: {e}"
 
 def apagar_item(item_id):
-    resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
-    if not resposta.data:
-        return False, "Item não encontrado."
-    
-    item = resposta.data[0]['item']
-    categoria = resposta.data[0]['categoria']
-    qtd = resposta.data[0]['quantidade']
-    
-    conn.table("inventario").delete().eq("id", item_id).execute()
-    
-    conn.table("movimentos").insert({
-        "id": str(uuid.uuid4()),
-        "data": datetime.now().isoformat(timespec="seconds"),
-        "tipo": "Eliminação",
-        "item": item,
-        "categoria": categoria,
-        "quantidade": qtd,
-        "pessoa": "—",
-        "observacoes": "Item eliminado do inventário"
-    }).execute()
-    
-    st.cache_data.clear()
-    return True, "Item eliminado."
+    try:
+        resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
+        if not resposta.data:
+            return False, "Item não encontrado."
+        
+        item = resposta.data[0]['item']
+        categoria = resposta.data[0]['categoria']
+        qtd = resposta.data[0]['quantidade']
+        
+        conn.table("inventario").delete().eq("id", item_id).execute()
+        
+        conn.table("movimentos").insert({
+            "id": str(uuid.uuid4()),
+            "data": datetime.now().isoformat(timespec="seconds"),
+            "tipo": "Eliminação",
+            "item": item,
+            "categoria": categoria,
+            "quantidade": qtd,
+            "pessoa": "—",
+            "observacoes": "Item eliminado do inventário"
+        }).execute()
+        
+        st.cache_data.clear()
+        return True, "Item eliminado."
+        
+    except Exception as e:
+        return False, f"Erro no banco de dados: {e}"
 
 # =========================================================
 # GERAÇÃO DE PDF (Otimizada)
@@ -271,7 +299,9 @@ with st.sidebar:
     menu = st.radio("Menu", ["📊 Dashboard", "📦 Registar Doação", "🔍 Consultar Inventário", "📤 Dar Baixa / Saída", "⚠️ Alertas de Validade", "🕓 Histórico de Movimentos", "🗑️ Apagar Item"], label_visibility="collapsed")
     st.divider()
     st.caption("💡 Dados guardados na nuvem (Supabase).")
-    if st.button("🔄 Recarregar dados", use_container_width=True): st.rerun()
+    if st.button("🔄 Recarregar dados", use_container_width=True): 
+        st.cache_data.clear()
+        st.rerun()
 
 # =========================================================
 # 1. DASHBOARD
@@ -329,12 +359,17 @@ elif menu == "📦 Registar Doação":
             validade = st.date_input("Data de Validade", value=date.today() + timedelta(days=90), disabled=not tem_validade)
             doador = st.text_input("Doador / Origem", placeholder="Nome ou 'Anónimo'")
         submitted = st.form_submit_button("💾 Guardar Registo", use_container_width=True)
+        
         if submitted:
-            if not item.strip(): st.warning("⚠️ Preenche o **Nome do Item**.")
+            if not item.strip(): 
+                st.warning("⚠️ Preenche o **Nome do Item**.")
             else:
-                registar_entrada(item, categoria, int(quantidade), validade if tem_validade else None, doador)
-                st.success(f"✅ '{item}' registado com sucesso!")
-                st.balloons()
+                sucesso, msg = registar_entrada(item, categoria, int(quantidade), validade if tem_validade else None, doador)
+                if sucesso:
+                    st.success(f"✅ {msg}")
+                    st.balloons()
+                else:
+                    st.error(f"❌ {msg}")
 
 # =========================================================
 # 3. CONSULTAR INVENTÁRIO
@@ -379,8 +414,11 @@ elif menu == "📤 Dar Baixa / Saída":
             ok = st.form_submit_button("📤 Confirmar Saída", use_container_width=True)
             if ok:
                 sucesso, msg = dar_baixa(item_id, int(qtd), destino, obs)
-                if sucesso: st.success(f"✅ {msg}"); st.rerun()
-                else: st.error(f"❌ {msg}")
+                if sucesso: 
+                    st.success(f"✅ {msg}")
+                    st.rerun()
+                else: 
+                    st.error(f"❌ {msg}")
 
 # =========================================================
 # 5. ALERTAS DE VALIDADE
@@ -399,9 +437,14 @@ elif menu == "⚠️ Alertas de Validade":
         c1.metric("🚫 Vencidos", len(vencidos))
         c2.metric(f"⚠️ A vencer ({DIAS_ALERTA}d)", len(a_vencer))
         st.divider()
-        if not vencidos.empty: st.error(f"🚫 **{len(vencidos)} lote(s) vencido(s)**"); render_tabela(vencidos.drop(columns=["_validade_dt"]))
-        if not a_vencer.empty: st.warning(f"⚠️ **{len(a_vencer)} lote(s) a vencer**"); render_tabela(a_vencer.drop(columns=["_validade_dt"]))
-        if vencidos.empty and a_vencer.empty: st.success("✅ Nenhum produto vencido ou a vencer.")
+        if not vencidos.empty: 
+            st.error(f"🚫 **{len(vencidos)} lote(s) vencido(s)**")
+            render_tabela(vencidos.drop(columns=["_validade_dt"]))
+        if not a_vencer.empty: 
+            st.warning(f"⚠️ **{len(a_vencer)} lote(s) a vencer**")
+            render_tabela(a_vencer.drop(columns=["_validade_dt"]))
+        if vencidos.empty and a_vencer.empty: 
+            st.success("✅ Nenhum produto vencido ou a vencer.")
 
 # =========================================================
 # 6. HISTÓRICO
@@ -427,5 +470,8 @@ elif menu == "🗑️ Apagar Item":
         confirmar = st.checkbox("Confirmo que quero eliminar este item permanentemente.")
         if st.button("🗑️ Eliminar", type="primary", disabled=not confirmar):
             ok, msg = apagar_item(opcoes[escolha])
-            if ok: st.success(f"✅ {msg}"); st.rerun()
-            else: st.error(f"❌ {msg}")
+            if ok: 
+                st.success(f"✅ {msg}")
+                st.rerun()
+            else: 
+                st.error(f"❌ {msg}")
