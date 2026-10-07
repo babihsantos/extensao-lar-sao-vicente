@@ -8,19 +8,6 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
 
 # =========================================================
 # CONFIGURAÇÃO
@@ -92,7 +79,6 @@ def fazer_backup():
         destino = BACKUP_DIR / f"inventario_{timestamp}.db"
         shutil.copy2(DB_PATH, destino)
 
-        # Limpa backups antigos (mantém apenas os MAX_BACKUPS mais recentes)
         backups = sorted(BACKUP_DIR.glob("inventario_*.db"), reverse=True)
         for antigo in backups[MAX_BACKUPS:]:
             antigo.unlink(missing_ok=True)
@@ -101,7 +87,6 @@ def fazer_backup():
 
 
 def restaurar_backup(ficheiro_bytes: bytes):
-    """Restaura a base de dados a partir de um upload."""
     with open(DB_PATH, "wb") as f:
         f.write(ficheiro_bytes)
     fazer_backup()
@@ -205,8 +190,6 @@ def registar_entrada(item, categoria, quantidade, validade, doador):
                 "Doação registada",
             ),
         )
-
-    # Limpa o cache para que a interface leia os novos dados
     st.cache_data.clear()
 
 
@@ -250,8 +233,6 @@ def dar_baixa(item_id, quantidade, destino, observacoes):
                 observacoes.strip() or "Baixa de stock",
             ),
         )
-
-    # Limpa o cache para que a interface leia os novos dados
     st.cache_data.clear()
     return True, "Baixa registada com sucesso."
 
@@ -284,18 +265,19 @@ def apagar_item(item_id):
                 "Item eliminado do inventário",
             ),
         )
-
-    # Limpa o cache para que a interface leia os novos dados
     st.cache_data.clear()
     return True, "Item eliminado."
 
 
 # =========================================================
-# GERAÇÃO DE PDF
+# GERAÇÃO DE PDF (Otimizada)
 # =========================================================
 @st.cache_resource
 def _registar_fonte_unicode():
-    """Registra a fonte apenas uma vez para otimizar a geração de PDFs."""
+    """Registra a fonte apenas uma vez. Importa o reportlab apenas quando necessário."""
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    
     candidatos = [
         ("DejaVu", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
         ("Arial", "C:/Windows/Fonts/arial.ttf"),
@@ -319,6 +301,13 @@ def _formatar_celula(valor):
 
 
 def gerar_pdf(df: pd.DataFrame, titulo: str, subtitulo: str = "") -> bytes:
+    # Importações pesadas movidas para dentro da função para acelerar a inicialização do app
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -395,14 +384,21 @@ def gerar_pdf(df: pd.DataFrame, titulo: str, subtitulo: str = "") -> bytes:
 
 
 def botao_pdf(df: pd.DataFrame, titulo: str, subtitulo: str, nome_ficheiro: str):
-    pdf_bytes = gerar_pdf(df, titulo, subtitulo)
-    st.download_button(
-        "📄 Exportar PDF",
-        data=pdf_bytes,
-        file_name=nome_ficheiro,
-        mime="application/pdf",
-        use_container_width=False,
-    )
+    """Gera o PDF apenas quando o usuário clica no botão, usando session_state."""
+    chave_pdf = f"pdf_bytes_{nome_ficheiro}"
+    
+    if st.button("📄 Preparar PDF", key=f"btn_gerar_{nome_ficheiro}", use_container_width=True):
+        with st.spinner("Gerando PDF, aguarde..."):
+            st.session_state[chave_pdf] = gerar_pdf(df, titulo, subtitulo)
+
+    if chave_pdf in st.session_state:
+        st.download_button(
+            "⬇️ Descarregar PDF",
+            data=st.session_state[chave_pdf],
+            file_name=nome_ficheiro,
+            mime="application/pdf",
+            use_container_width=True,
+        )
 
 
 # =========================================================
