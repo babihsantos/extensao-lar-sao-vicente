@@ -5,7 +5,7 @@ from io import BytesIO
 
 import pandas as pd
 import streamlit as st
-import sqlalchemy
+from st_supabase_connection import SupabaseConnection
 
 # =========================================================
 # CONFIGURAÇÃO
@@ -28,7 +28,8 @@ CATEGORIAS = [
 DIAS_ALERTA = 30
 
 # Conexão com o banco de dados na nuvem (Supabase)
-conn = st.connection("supabase", type="sql")
+# O nome "supabase_connection" deve ser o mesmo usado no Secrets
+conn = st.connection("supabase_connection", type=SupabaseConnection)
 
 # =========================================================
 # CSS
@@ -53,144 +54,115 @@ st.markdown(
 )
 
 # =========================================================
-# BASE DE DADOS (SUPABASE)
+# FUNÇÕES DE BANCO DE DADOS (SUPABASE)
 # =========================================================
 @st.cache_data(ttl=60)
 def carregar_inventario() -> pd.DataFrame:
-    return conn.query("SELECT * FROM inventario ORDER BY categoria, item", ttl=60)
+    resposta = conn.table("inventario").select("*").order("categoria").order("item").execute()
+    return pd.DataFrame(resposta.data)
 
 @st.cache_data(ttl=60)
 def carregar_movimentos() -> pd.DataFrame:
-    return conn.query("SELECT * FROM movimentos ORDER BY data DESC", ttl=60)
+    resposta = conn.table("movimentos").select("*").order("data", desc=True).execute()
+    return pd.DataFrame(resposta.data)
 
 def registar_entrada(item, categoria, quantidade, validade, doador):
-    with conn.session as s:
-        cur = s.execute(
-            sqlalchemy.text("""
-                SELECT id FROM inventario 
-                WHERE LOWER(item) = LOWER(:item) AND COALESCE(validade,'') = :validade
-            """),
-            {"item": item, "validade": str(validade) if validade else ""}
-        )
-        existente = cur.fetchone()
-
-        if existente:
-            s.execute(
-                sqlalchemy.text("UPDATE inventario SET quantidade = quantidade + :qtd WHERE id = :id"),
-                {"qtd": quantidade, "id": existente[0]}
-            )
-        else:
-            s.execute(
-                sqlalchemy.text("""
-                    INSERT INTO inventario (id, item, categoria, quantidade, validade, doador, data_entrada)
-                    VALUES (:id, :item, :cat, :qtd, :val, :doador, :data)
-                """),
-                {
-                    "id": str(uuid.uuid4()),
-                    "item": item.strip(),
-                    "cat": categoria,
-                    "qtd": quantidade,
-                    "val": str(validade) if validade else None,
-                    "doador": doador.strip() or "Anónimo",
-                    "data": datetime.now().isoformat(timespec="seconds")
-                }
-            )
-        
-        s.execute(
-            sqlalchemy.text("""
-                INSERT INTO movimentos (id, data, tipo, item, categoria, quantidade, pessoa, observacoes)
-                VALUES (:id, :data, :tipo, :item, :cat, :qtd, :pessoa, :obs)
-            """),
-            {
-                "id": str(uuid.uuid4()),
-                "data": datetime.now().isoformat(timespec="seconds"),
-                "tipo": "Entrada",
-                "item": item.strip(),
-                "cat": categoria,
-                "qtd": quantidade,
-                "pessoa": doador.strip() or "Anónimo",
-                "obs": "Doação registada"
-            }
-        )
-        s.commit()
+    validade_str = str(validade) if validade else None
+    
+    # Busca um item existente com o mesmo nome e validade
+    resposta = conn.table("inventario").select("id, quantidade").eq("item", item).eq("validade", validade_str).execute()
+    
+    if resposta.data:
+        # Item já existe: atualiza a quantidade
+        item_id = resposta.data[0]['id']
+        nova_qtd = resposta.data[0]['quantidade'] + quantidade
+        conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
+    else:
+        # Item novo: insere na tabela
+        conn.table("inventario").insert({
+            "id": str(uuid.uuid4()),
+            "item": item.strip(),
+            "categoria": categoria,
+            "quantidade": quantidade,
+            "validade": validade_str,
+            "doador": doador.strip() or "Anónimo",
+            "data_entrada": datetime.now().isoformat(timespec="seconds")
+        }).execute()
+    
+    # Regista o movimento de entrada
+    conn.table("movimentos").insert({
+        "id": str(uuid.uuid4()),
+        "data": datetime.now().isoformat(timespec="seconds"),
+        "tipo": "Entrada",
+        "item": item.strip(),
+        "categoria": categoria,
+        "quantidade": quantidade,
+        "pessoa": doador.strip() or "Anónimo",
+        "observacoes": "Doação registada"
+    }).execute()
+    
     st.cache_data.clear()
 
 def dar_baixa(item_id, quantidade, destino, observacoes):
-    with conn.session as s:
-        cur = s.execute(
-            sqlalchemy.text("SELECT item, categoria, quantidade FROM inventario WHERE id = :id"),
-            {"id": item_id}
-        )
-        row = cur.fetchone()
-        if not row:
-            return False, "Item não encontrado."
-
-        item, categoria, stock_atual = row
-        if quantidade > stock_atual:
-            return False, f"Stock insuficiente (disponível: {stock_atual})."
-
-        nova_qtd = stock_atual - quantidade
-        if nova_qtd == 0:
-            s.execute(sqlalchemy.text("DELETE FROM inventario WHERE id = :id"), {"id": item_id})
-        else:
-            s.execute(
-                sqlalchemy.text("UPDATE inventario SET quantidade = :qtd WHERE id = :id"),
-                {"qtd": nova_qtd, "id": item_id}
-            )
-
-        s.execute(
-            sqlalchemy.text("""
-                INSERT INTO movimentos (id, data, tipo, item, categoria, quantidade, pessoa, observacoes)
-                VALUES (:id, :data, :tipo, :item, :cat, :qtd, :pessoa, :obs)
-            """),
-            {
-                "id": str(uuid.uuid4()),
-                "data": datetime.now().isoformat(timespec="seconds"),
-                "tipo": "Saída",
-                "item": item,
-                "cat": categoria,
-                "qtd": quantidade,
-                "pessoa": destino.strip() or "—",
-                "obs": observacoes.strip() or "Baixa de stock"
-            }
-        )
-        s.commit()
+    resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
+    if not resposta.data:
+        return False, "Item não encontrado."
+    
+    item = resposta.data[0]['item']
+    categoria = resposta.data[0]['categoria']
+    stock_atual = resposta.data[0]['quantidade']
+    
+    if quantidade > stock_atual:
+        return False, f"Stock insuficiente (disponível: {stock_atual})."
+    
+    nova_qtd = stock_atual - quantidade
+    if nova_qtd == 0:
+        conn.table("inventario").delete().eq("id", item_id).execute()
+    else:
+        conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
+    
+    # Regista o movimento de saída
+    conn.table("movimentos").insert({
+        "id": str(uuid.uuid4()),
+        "data": datetime.now().isoformat(timespec="seconds"),
+        "tipo": "Saída",
+        "item": item,
+        "categoria": categoria,
+        "quantidade": quantidade,
+        "pessoa": destino.strip() or "—",
+        "observacoes": observacoes.strip() or "Baixa de stock"
+    }).execute()
+    
     st.cache_data.clear()
     return True, "Baixa registada com sucesso."
 
 def apagar_item(item_id):
-    with conn.session as s:
-        cur = s.execute(
-            sqlalchemy.text("SELECT item, categoria, quantidade FROM inventario WHERE id = :id"),
-            {"id": item_id}
-        )
-        row = cur.fetchone()
-        if not row:
-            return False, "Item não encontrado."
-        item, categoria, qtd = row
-        s.execute(sqlalchemy.text("DELETE FROM inventario WHERE id = :id"), {"id": item_id})
-        s.execute(
-            sqlalchemy.text("""
-                INSERT INTO movimentos (id, data, tipo, item, categoria, quantidade, pessoa, observacoes)
-                VALUES (:id, :data, :tipo, :item, :cat, :qtd, :pessoa, :obs)
-            """),
-            {
-                "id": str(uuid.uuid4()),
-                "data": datetime.now().isoformat(timespec="seconds"),
-                "tipo": "Eliminação",
-                "item": item,
-                "cat": categoria,
-                "qtd": qtd,
-                "pessoa": "—",
-                "obs": "Item eliminado do inventário"
-            }
-        )
-        s.commit()
+    resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
+    if not resposta.data:
+        return False, "Item não encontrado."
+    
+    item = resposta.data[0]['item']
+    categoria = resposta.data[0]['categoria']
+    qtd = resposta.data[0]['quantidade']
+    
+    conn.table("inventario").delete().eq("id", item_id).execute()
+    
+    conn.table("movimentos").insert({
+        "id": str(uuid.uuid4()),
+        "data": datetime.now().isoformat(timespec="seconds"),
+        "tipo": "Eliminação",
+        "item": item,
+        "categoria": categoria,
+        "quantidade": qtd,
+        "pessoa": "—",
+        "observacoes": "Item eliminado do inventário"
+    }).execute()
+    
     st.cache_data.clear()
     return True, "Item eliminado."
 
 # =========================================================
-# GERAÇÃO DE PDF
+# GERAÇÃO DE PDF (Otimizada)
 # =========================================================
 @st.cache_resource
 def _registar_fonte_unicode():
@@ -330,7 +302,10 @@ if menu == "📊 Dashboard":
             st.bar_chart(inv.groupby("categoria")["quantidade"].sum().sort_values(ascending=False), use_container_width=True)
         with col_b:
             st.subheader("🕓 Últimas Movimentações")
-            st.dataframe(renomear_colunas(mov[["data", "tipo", "item", "quantidade", "pessoa"]].head(8)), use_container_width=True, hide_index=True)
+            if not mov.empty:
+                st.dataframe(renomear_colunas(mov[["data", "tipo", "item", "quantidade", "pessoa"]].head(8)), use_container_width=True, hide_index=True)
+            else:
+                st.caption("Sem movimentos registados.")
         
         st.divider()
         col_titulo, col_btn = st.columns([3, 1])
