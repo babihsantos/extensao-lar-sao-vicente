@@ -500,7 +500,6 @@ if menu == "📊 Visão geral":
     # --- Métricas ---
     total_unidades = int(inv["quantidade"].sum()) if not inv.empty else 0
     itens_distintos = len(inv) if not inv.empty else 0
-    categorias_n = inv["categoria"].nunique() if not inv.empty else 0
 
     inv_v = inv.copy() if not inv.empty else pd.DataFrame()
     vencidos_qtd = a_vencer_qtd = estoque_baixo = 0
@@ -548,7 +547,7 @@ if menu == "📊 Visão geral":
                 m["dt"] = pd.to_datetime(m["data"], errors="coerce")
                 m = m.dropna(subset=["dt"]).sort_values("dt")
                 m["delta"] = m.apply(
-                    lambda r: r["quantidade"] if r["tipo"] in ("Entrada",) else -r["quantidade"],
+                    lambda r: r["quantidade"] if r["tipo"] == "Entrada" else -r["quantidade"],
                     axis=1,
                 )
                 diario = m.set_index("dt").resample("D")["delta"].sum().cumsum()
