@@ -5,7 +5,6 @@ from io import BytesIO
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 from st_supabase_connection import SupabaseConnection
 
@@ -13,8 +12,8 @@ from st_supabase_connection import SupabaseConnection
 # CONFIGURAÇÃO
 # =========================================================
 st.set_page_config(
-    page_title="Gestão de Doações — Lar São Vicente",
-    page_icon="🏥",
+    page_title="Lar São Vicente — Doações",
+    page_icon="💚",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -28,167 +27,314 @@ CATEGORIAS_PADRAO = [
 conn = st.connection("supabase_connection", type=SupabaseConnection)
 
 # =========================================================
-# CSS MODERNO
+# CSS — LAYOUT VIBRANTE
 # =========================================================
 st.markdown(
     """
     <style>
-    /* ---------- base ---------- */
-    .stApp { background: #f4f6fb; }
-    .block-container { padding-top: 1rem; padding-bottom: 3rem; max-width: 1400px; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
 
-    /* esconder header padrão do streamlit */
-    header[data-testid="stHeader"] { background: transparent; }
+    * { font-family: 'Inter', sans-serif; }
 
-    /* ---------- sidebar ---------- */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e2a47 0%, #2E86AB 100%);
+    /* ---------- fundo animado ---------- */
+    .stApp {
+        background: linear-gradient(-45deg, #fef3f8, #e0f2fe, #f3e8ff, #dcfce7);
+        background-size: 400% 400%;
+        animation: bgShift 18s ease infinite;
     }
-    section[data-testid="stSidebar"] * { color: #eef2f7 !important; }
-    section[data-testid="stSidebar"] .stRadio > label { color: #eef2f7 !important; }
-    section[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.15); }
-    section[data-testid="stSidebar"] .stButton>button {
-        background: rgba(255,255,255,0.12);
-        color: #fff;
-        border: 1px solid rgba(255,255,255,0.2);
-    }
-    section[data-testid="stSidebar"] .stButton>button:hover {
-        background: rgba(255,255,255,0.22);
-    }
-
-    /* ---------- hero ---------- */
-    .hero {
-        position: relative;
-        background: linear-gradient(120deg, #2E86AB 0%, #6A4C93 55%, #C73E1D 100%);
-        background-size: 200% 200%;
-        animation: gradShift 12s ease infinite;
-        padding: 2rem 2.2rem;
-        border-radius: 20px;
-        color: #fff;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 12px 40px rgba(46,134,171,0.28);
-        overflow: hidden;
-    }
-    .hero::before {
-        content: ""; position: absolute; top:-50%; right:-10%;
-        width: 380px; height: 380px;
-        background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
-        border-radius: 50%;
-    }
-    .hero h1 { margin: 0; font-size: 1.9rem; font-weight: 800; letter-spacing: -0.5px; }
-    .hero .sub { opacity: 0.92; margin-top: .4rem; font-size: 1rem; }
-    .hero .meta { margin-top: 1rem; font-size: .85rem; opacity: .85;
-                  display:flex; gap: 1.4rem; flex-wrap: wrap; }
-    .hero .meta span { display:inline-flex; align-items:center; gap:.35rem; }
-    @keyframes gradShift {
+    @keyframes bgShift {
         0%   { background-position: 0% 50%; }
         50%  { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
+    .block-container {
+        padding-top: 1.5rem; padding-bottom: 3rem; max-width: 1450px;
+    }
+    header[data-testid="stHeader"] { background: transparent; }
 
-    /* ---------- cards KPI ---------- */
+    /* ---------- sidebar dark neon ---------- */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #4c1d95 100%);
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+    section[data-testid="stSidebar"] h2 {
+        background: linear-gradient(90deg, #67e8f9, #a78bfa);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text; font-weight: 900 !important;
+    }
+    section[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.1); }
+    section[data-testid="stSidebar"] .stRadio label {
+        padding: .55rem .8rem !important; border-radius: 10px;
+        transition: all .2s; font-weight: 600;
+    }
+    section[data-testid="stSidebar"] .stRadio label:hover {
+        background: rgba(255,255,255,0.08);
+    }
+    section[data-testid="stSidebar"] .stButton>button {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff !important; border: none;
+        box-shadow: 0 4px 14px rgba(139,92,246,0.35);
+    }
+    section[data-testid="stSidebar"] .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(139,92,246,0.5);
+    }
+
+    /* ---------- HERO ---------- */
+    .hero {
+        position: relative;
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        background-size: 200% 200%;
+        animation: gradMove 10s ease infinite;
+        padding: 2.4rem 2.6rem;
+        border-radius: 26px;
+        color: #fff;
+        margin-bottom: 1.8rem;
+        box-shadow: 0 20px 50px rgba(168,85,247,0.35);
+        overflow: hidden;
+    }
+    .hero::before {
+        content: ""; position: absolute; top: -30%; right: -5%;
+        width: 420px; height: 420px;
+        background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 65%);
+        border-radius: 50%; animation: float 8s ease-in-out infinite;
+    }
+    .hero::after {
+        content: ""; position: absolute; bottom: -40%; left: -5%;
+        width: 320px; height: 320px;
+        background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 65%);
+        border-radius: 50%; animation: float 10s ease-in-out infinite reverse;
+    }
+    @keyframes gradMove {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    @keyframes float {
+        0%, 100% { transform: translateY(0) translateX(0); }
+        50%      { transform: translateY(-24px) translateX(18px); }
+    }
+    .hero h1 {
+        margin: 0; font-size: 2.3rem; font-weight: 900;
+        letter-spacing: -1px; line-height: 1.1; position: relative; z-index: 1;
+    }
+    .hero .sub {
+        opacity: 0.96; margin-top: .55rem; font-size: 1.05rem;
+        font-weight: 500; position: relative; z-index: 1;
+    }
+    .hero .meta {
+        margin-top: 1.3rem; font-size: .88rem; font-weight: 600;
+        display: flex; gap: 1.6rem; flex-wrap: wrap; position: relative; z-index: 1;
+    }
+    .hero .meta span {
+        display: inline-flex; align-items: center; gap: .4rem;
+        background: rgba(255,255,255,0.15);
+        padding: .4rem .9rem; border-radius: 999px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* ---------- KPI CARDS ---------- */
     .kpi {
-        background: #fff;
-        padding: 1.1rem 1.2rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 18px rgba(20,30,60,0.07);
-        border-left: 5px solid var(--c);
-        transition: transform .18s ease, box-shadow .18s ease;
+        position: relative;
+        background: rgba(255,255,255,0.75);
+        backdrop-filter: blur(20px);
+        padding: 1.2rem 1.3rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 30px rgba(15,23,42,0.08);
+        border: 1px solid rgba(255,255,255,0.9);
+        transition: all .25s ease;
+        overflow: hidden;
         height: 100%;
+    }
+    .kpi::before {
+        content: ""; position: absolute; top:0; left:0; right:0; height: 4px;
+        background: var(--grad, linear-gradient(90deg, #6366f1, #a855f7));
     }
     .kpi:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 28px rgba(20,30,60,0.14);
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 18px 45px rgba(15,23,42,0.16);
     }
-    .kpi .icon { font-size: 1.6rem; }
+    .kpi .icon {
+        font-size: 1.9rem; line-height: 1;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.12));
+    }
     .kpi .label {
-        font-size: .78rem; color: #6b7280; font-weight: 600;
-        text-transform: uppercase; letter-spacing: .4px;
-        margin-top: .3rem;
+        font-size: .74rem; color: #64748b; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .8px;
+        margin-top: .55rem;
     }
     .kpi .value {
-        font-size: 1.9rem; font-weight: 800; color: #111827;
-        margin-top: .15rem; line-height: 1.1;
+        font-size: 2rem; font-weight: 900; color: #0f172a;
+        margin-top: .2rem; line-height: 1.05;
+        background: var(--grad, linear-gradient(90deg, #6366f1, #a855f7));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
-    .kpi .delta { font-size: .78rem; color: #6b7280; margin-top: .3rem; }
+    .kpi .delta { font-size: .78rem; color: #94a3b8; margin-top: .35rem; font-weight: 500; }
 
-    /* ---------- seções ---------- */
+    /* ---------- section title ---------- */
     .section-title {
-        font-size: 1.15rem; font-weight: 700; color: #1f2937;
-        margin: 1.6rem 0 .9rem 0;
-        display: flex; align-items: center; gap: .5rem;
+        font-size: 1.35rem; font-weight: 900; color: #0f172a;
+        margin: 2rem 0 1rem 0; display: flex; align-items: center; gap: .7rem;
+        letter-spacing: -0.3px;
     }
     .section-title::before {
-        content: ""; width: 5px; height: 22px; border-radius: 4px;
-        background: linear-gradient(180deg, #2E86AB, #6A4C93);
+        content: ""; width: 6px; height: 26px; border-radius: 4px;
+        background: linear-gradient(180deg, #6366f1, #ec4899);
         display: inline-block;
+        box-shadow: 0 0 12px rgba(99,102,241,0.6);
     }
 
-    /* ---------- card genérico ---------- */
+    /* ---------- card ---------- */
     .card {
-        background: #fff; border-radius: 16px; padding: 1.2rem 1.3rem;
-        box-shadow: 0 4px 18px rgba(20,30,60,0.07);
-        border: 1px solid #eef1f7;
+        background: rgba(255,255,255,0.8);
+        backdrop-filter: blur(20px);
+        border-radius: 20px; padding: 1.3rem 1.4rem;
+        box-shadow: 0 8px 30px rgba(15,23,42,0.08);
+        border: 1px solid rgba(255,255,255,0.9);
         height: 100%;
+        transition: all .25s ease;
     }
-    .card h4 { margin: 0 0 .6rem 0; color:#111827; font-size: 1rem; }
+    .card:hover { box-shadow: 0 14px 40px rgba(15,23,42,0.12); }
+    .card h4 {
+        margin: 0 0 .8rem 0; color: #0f172a; font-size: 1.05rem; font-weight: 800;
+    }
 
-    /* ---------- alertas ---------- */
+    /* ---------- alert cards ---------- */
     .alert {
-        padding: 1rem 1.2rem; border-radius: 14px; margin-bottom: .7rem;
-        display: flex; align-items: center; gap: 1rem;
-        font-weight: 600;
+        padding: 1.2rem 1.3rem; border-radius: 18px; margin-bottom: .8rem;
+        display: flex; align-items: center; gap: 1.1rem;
+        font-weight: 600; position: relative; overflow: hidden;
+        box-shadow: 0 6px 20px rgba(15,23,42,0.06);
+        transition: transform .2s;
     }
-    .alert .icon { font-size: 1.8rem; }
-    .alert.danger  { background:#fef2f2; border-left: 5px solid #C73E1D; color:#7f1d1d; }
-    .alert.warn    { background:#fffbeb; border-left: 5px solid #F18F01; color:#78350f; }
-    .alert.ok      { background:#f0fdf4; border-left: 5px solid #16a34a; color:#14532d; }
-    .alert .count  { font-size: 1.4rem; font-weight: 800; }
+    .alert:hover { transform: translateY(-3px); }
+    .alert .icon {
+        font-size: 2.1rem;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+    .alert .count { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+    .alert .txt { font-size: .85rem; font-weight: 500; opacity: .85; margin-top: .15rem; }
+    .alert.danger {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        border-left: 6px solid #dc2626; color: #7f1d1d;
+    }
+    .alert.warn {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border-left: 6px solid #f59e0b; color: #78350f;
+    }
+    .alert.ok {
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        border-left: 6px solid #16a34a; color: #14532d;
+    }
+    .alert.info {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        border-left: 6px solid #2563eb; color: #1e3a8a;
+    }
 
     /* ---------- timeline ---------- */
-    .timeline { position: relative; padding-left: 1.4rem; }
+    .timeline { position: relative; padding-left: 1.5rem; }
     .timeline::before {
-        content:""; position:absolute; left: 6px; top: 0; bottom: 0;
-        width: 2px; background: #e5e7eb;
+        content: ""; position: absolute; left: 7px; top: 4px; bottom: 4px;
+        width: 2px; background: linear-gradient(180deg, #6366f1, #ec4899, transparent);
+        border-radius: 2px;
     }
     .tl-item {
         position: relative; margin-bottom: 1rem;
-        background: #fff; padding: .7rem .9rem;
-        border-radius: 12px; box-shadow: 0 2px 10px rgba(20,30,60,0.05);
+        background: rgba(255,255,255,0.85);
+        padding: .85rem 1rem; border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(15,23,42,0.06);
+        transition: transform .2s;
+        border: 1px solid rgba(255,255,255,0.9);
     }
+    .tl-item:hover { transform: translateX(6px); }
     .tl-item::before {
-        content:""; position:absolute; left:-1.15rem; top: 14px;
-        width: 12px; height: 12px; border-radius: 50%;
-        background: var(--dot, #2E86AB);
-        border: 2px solid #fff;
-        box-shadow: 0 0 0 2px var(--dot, #2E86AB);
+        content: ""; position: absolute; left: -1.25rem; top: 18px;
+        width: 14px; height: 14px; border-radius: 50%;
+        background: var(--dot, #6366f1);
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 3px var(--dot, #6366f1), 0 0 16px var(--dot, #6366f1);
     }
-    .tl-item .t { font-size: .78rem; color: #6b7280; }
-    .tl-item .h { font-weight: 700; color: #111827; margin-top: .1rem; }
-    .tl-item .d { font-size: .84rem; color: #4b5563; margin-top: .1rem; }
+    .tl-item .t {
+        font-size: .74rem; color: #94a3b8; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .5px;
+    }
+    .tl-item .h { font-weight: 800; color: #0f172a; margin-top: .2rem; font-size: .95rem; }
+    .tl-item .d { font-size: .82rem; color: #64748b; margin-top: .15rem; }
 
     /* ---------- badge ---------- */
     .badge {
-        display: inline-block; padding: .18rem .6rem;
-        border-radius: 999px; font-size: .74rem; font-weight: 700;
+        display: inline-block; padding: .2rem .65rem;
+        border-radius: 999px; font-size: .72rem; font-weight: 800;
+        text-transform: uppercase; letter-spacing: .5px;
     }
-    .badge.in  { background:#dbeafe; color:#1e40af; }
-    .badge.out { background:#fee2e2; color:#991b1b; }
-    .badge.del { background:#f3f4f6; color:#374151; }
-    .badge.edit{ background:#fef3c7; color:#92400e; }
+    .badge.in  { background: #dcfce7; color: #14532d; }
+    .badge.out { background: #fee2e2; color: #7f1d1d; }
+    .badge.del { background: #f1f5f9; color: #334155; }
+    .badge.edit{ background: #fef3c7; color: #78350f; }
 
-    /* ---------- tabela ---------- */
-    [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
+    /* ---------- ranking ---------- */
+    .rank-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: .7rem .5rem; border-bottom: 1px solid #f1f5f9;
+        transition: background .15s; border-radius: 8px;
+    }
+    .rank-row:hover { background: rgba(99,102,241,0.05); }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row .medal { font-size: 1.3rem; margin-right: .6rem; }
+    .rank-row .val {
+        font-weight: 900; font-size: 1rem;
+        background: linear-gradient(90deg, #6366f1, #ec4899);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ---------- botões ---------- */
+    .stButton>button, .stDownloadButton>button {
+        border-radius: 12px !important; font-weight: 700 !important;
+        transition: all .2s !important;
+        border: none !important;
+    }
+    .stButton>button {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+        color: #fff !important;
+        box-shadow: 0 4px 14px rgba(99,102,241,0.3) !important;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(99,102,241,0.45) !important;
+    }
+
+    /* ---------- dataframe ---------- */
+    [data-testid="stDataFrame"] {
+        border-radius: 16px; overflow: hidden;
+        box-shadow: 0 6px 20px rgba(15,23,42,0.06);
+        border: 1px solid rgba(255,255,255,0.9);
+    }
 
     /* ---------- métricas nativas ---------- */
     [data-testid="stMetric"] {
-        background: #fff; border-radius: 14px;
-        padding: .8rem 1rem; box-shadow: 0 3px 12px rgba(20,30,60,0.06);
+        background: rgba(255,255,255,0.8);
+        backdrop-filter: blur(20px);
+        border-radius: 16px; padding: .9rem 1rem;
+        box-shadow: 0 6px 20px rgba(15,23,42,0.06);
+        border: 1px solid rgba(255,255,255,0.9);
     }
 
-    /* botões */
-    .stButton>button, .stDownloadButton>button {
-        border-radius: 10px; font-weight: 600;
+    /* tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: .5rem; background: rgba(255,255,255,0.6);
+        padding: .4rem; border-radius: 14px;
+        backdrop-filter: blur(10px);
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px; font-weight: 700; padding: .5rem 1rem;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #6366f1, #a855f7) !important;
+        color: #fff !important;
     }
     </style>
     """,
@@ -329,7 +475,7 @@ def gerar_pdf(df, titulo, subtitulo=""):
     f = _fonte()
     s = getSampleStyleSheet()
     ts = ParagraphStyle("T", parent=s["Title"], fontName=f, fontSize=16,
-                        textColor=colors.HexColor("#2E86AB"), spaceAfter=4)
+                        textColor=colors.HexColor("#6366f1"), spaceAfter=4)
     ss = ParagraphStyle("S", parent=s["Normal"], fontName=f, fontSize=9,
                         textColor=colors.HexColor("#666"), spaceAfter=2)
     story = [Paragraph(titulo, ts)]
@@ -342,12 +488,12 @@ def gerar_pdf(df, titulo, subtitulo=""):
         dados = [list(df.columns)] + [[_fmt(v) for v in r] for r in df.values.tolist()]
         t = Table(dados, repeatRows=1)
         t.setStyle(TableStyle([
-            ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#2E86AB")),
+            ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#6366f1")),
             ("TEXTCOLOR",(0,0),(-1,0),colors.white),
             ("FONTNAME",(0,0),(-1,-1),f),
             ("FONTSIZE",(0,0),(-1,-1),8),
             ("GRID",(0,0),(-1,-1),0.3,colors.HexColor("#cfd8dc")),
-            ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#f5f7fa")]),
+            ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#f8fafc")]),
         ]))
         story.append(t)
     doc.build(story); return buf.getvalue()
@@ -362,7 +508,7 @@ def botao_pdf(df, titulo, sub, nome):
                 st.session_state[k] = gerar_pdf(df, titulo, sub)
     if k in st.session_state:
         with c2:
-            st.download_button("⬇️ Descarregar", data=st.session_state[k],
+            st.download_button("⬇️ Descarregar PDF", data=st.session_state[k],
                 file_name=nome, mime="application/pdf", use_container_width=True)
 
 
@@ -396,9 +542,9 @@ def render_tabela(df):
     st.dataframe(renomear(d), use_container_width=True, hide_index=True)
 
 
-def kpi_card(icon, label, value, color, extra=""):
+def kpi_card(icon, label, value, grad, extra=""):
     return f"""
-    <div class="kpi" style="--c:{color}">
+    <div class="kpi" style="--grad:{grad}">
         <div class="icon">{icon}</div>
         <div class="label">{label}</div>
         <div class="value">{value}</div>
@@ -413,7 +559,7 @@ def alert_card(kind, icon, count, text):
         <div class="icon">{icon}</div>
         <div>
             <div class="count">{count}</div>
-            <div style="font-weight:500;font-size:.85rem;opacity:.85">{text}</div>
+            <div class="txt">{text}</div>
         </div>
     </div>
     """
@@ -427,12 +573,12 @@ def hero():
     agora = datetime.now().strftime("%d/%m/%Y · %H:%M")
     st.markdown(f"""
     <div class="hero">
-        <h1>🏥 Sistema de Controlo de Doações e Inventário</h1>
-        <div class="sub">Lar São Vicente de Paulo — São José do Rio Preto · Projeto de Extensão UNIP</div>
+        <h1>💚 Lar São Vicente de Paulo</h1>
+        <div class="sub">Sistema de Controlo de Doações & Inventário · São José do Rio Preto</div>
         <div class="meta">
-            <span>📅 {agora}</span>
-            <span>☁️ Dados sincronizados (Supabase)</span>
-            <span>🔒 Sessão local</span>
+            <span>🕐 {agora}</span>
+            <span>☁️ Sincronizado</span>
+            <span>✨ Tempo real</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -441,6 +587,16 @@ def hero():
 def badge(tipo):
     cls = {"Entrada":"in","Saída":"out","Eliminação":"del","Edição":"edit"}.get(tipo,"del")
     return f'<span class="badge {cls}">{tipo}</span>'
+
+
+GRAD = {
+    "azul":   "linear-gradient(90deg, #3b82f6, #06b6d4)",
+    "roxo":   "linear-gradient(90deg, #8b5cf6, #d946ef)",
+    "verde":  "linear-gradient(90deg, #10b981, #84cc16)",
+    "laranja":"linear-gradient(90deg, #f59e0b, #ef4444)",
+    "vermelho":"linear-gradient(90deg, #ef4444, #ec4899)",
+    "rosa":   "linear-gradient(90deg, #ec4899, #8b5cf6)",
+}
 
 
 # =========================================================
@@ -452,8 +608,8 @@ hero()
 # SIDEBAR
 # =========================================================
 with st.sidebar:
-    st.markdown("## 🏥 Lar São Vicente")
-    st.caption("Sistema de inventário")
+    st.markdown("## 💚 Lar São Vicente")
+    st.caption("Painel de gestão")
     st.divider()
 
     menu = st.radio(
@@ -476,7 +632,7 @@ with st.sidebar:
     if st.button("🔄 Recarregar dados", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-    st.caption("💾 Dados no Supabase · cache 30s")
+    st.caption("💾 Dados seguros na nuvem")
 
 
 # =========================================================
@@ -496,20 +652,18 @@ if menu == "📊  Dashboard":
         baixo = int((inv["quantidade"] <= inv["estoque_minimo"]).sum())
         total_doa = mov[mov["tipo"] == "Entrada"]["quantidade"].sum() if not mov.empty else 0
 
-        # -------- KPIs --------
         cols = st.columns(6)
         cards = [
-            ("📦", "Unidades em stock", f"{total_un:,}".replace(",", "."), "#2E86AB", f"{len(inv)} lotes"),
-            ("🏷️", "Itens distintos", len(inv), "#6A4C93", f"{inv['categoria'].nunique()} categorias"),
-            ("📥", "Doações recebidas", int(total_doa), "#16a34a", "histórico total"),
-            ("⚠️", "A vencer (30d)", aven, "#F18F01", f"{len(inv[inv['_status']=='A vencer'])} lotes"),
-            ("🚫", "Vencidos", venc, "#C73E1D", f"{len(inv[inv['_status']=='Vencido'])} lotes"),
-            ("📉", "Estoque baixo", baixo, "#dc2626", "repor urgente"),
+            ("📦", "Unidades em stock", f"{total_un:,}".replace(",", "."), GRAD["azul"], f"{len(inv)} lotes"),
+            ("🏷️", "Itens distintos", len(inv), GRAD["roxo"], f"{inv['categoria'].nunique()} categorias"),
+            ("📥", "Doações recebidas", int(total_doa), GRAD["verde"], "histórico total"),
+            ("⚠️", "A vencer (30d)", aven, GRAD["laranja"], f"{len(inv[inv['_status']=='A vencer'])} lotes"),
+            ("🚫", "Vencidos", venc, GRAD["vermelho"], f"{len(inv[inv['_status']=='Vencido'])} lotes"),
+            ("📉", "Estoque baixo", baixo, GRAD["rosa"], "repor urgente"),
         ]
-        for c, (i, l, v, col, e) in zip(cols, cards):
-            c.markdown(kpi_card(i, l, v, col, e), unsafe_allow_html=True)
+        for c, (i, l, v, g, e) in zip(cols, cards):
+            c.markdown(kpi_card(i, l, v, g, e), unsafe_allow_html=True)
 
-        # -------- alertas --------
         section_title("🚨 Estado do Inventário")
 
         a1, a2, a3 = st.columns(3)
@@ -531,7 +685,6 @@ if menu == "📊  Dashboard":
         else:
             a3.markdown(alert_card("ok", "✅", 0, "Estoque saudável"), unsafe_allow_html=True)
 
-        # -------- gráficos --------
         section_title("📊 Análise Visual")
 
         g1, g2 = st.columns([1.3, 1])
@@ -540,77 +693,81 @@ if menu == "📊  Dashboard":
                        .sum().sort_values("quantidade", ascending=True))
             fig = px.bar(
                 por_cat, x="quantidade", y="categoria", orientation="h",
-                color="quantidade", color_continuous_scale="Blues",
+                color="quantidade",
+                color_continuous_scale=["#c7d2fe", "#6366f1", "#a855f7", "#ec4899"],
                 text="quantidade",
             )
             fig.update_layout(
-                title="Stock por categoria",
-                height=380, showlegend=False, coloraxis_showscale=False,
-                margin=dict(l=0, r=0, t=50, b=0),
+                height=400, showlegend=False, coloraxis_showscale=False,
+                margin=dict(l=0, r=0, t=10, b=0),
                 xaxis_title="", yaxis_title="",
-                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="white",
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter", size=12, color="#334155"),
             )
-            fig.update_traces(textposition="outside", marker_line_width=0)
+            fig.update_traces(textposition="outside", marker_line_width=0,
+                              textfont=dict(color="#0f172a", size=12))
             st.plotly_chart(fig, use_container_width=True)
 
         with g2:
             fig2 = px.pie(
                 por_cat, names="categoria", values="quantidade", hole=0.55,
-                color_discrete_sequence=px.colors.qualitative.Set3,
+                color_discrete_sequence=["#6366f1","#a855f7","#ec4899",
+                                         "#06b6d4","#10b981","#f59e0b"],
             )
             fig2.update_layout(
-                title="Distribuição",
-                height=380, margin=dict(l=0, r=0, t=50, b=0),
-                paper_bgcolor="white",
-                legend=dict(orientation="h", y=-0.1),
+                height=400, margin=dict(l=0, r=0, t=10, b=0),
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter", size=12, color="#334155"),
+                legend=dict(orientation="h", y=-0.1, font=dict(size=11)),
             )
-            fig2.update_traces(textposition="inside", textinfo="percent")
+            fig2.update_traces(textposition="inside", textinfo="percent",
+                               textfont=dict(color="#fff", size=13, family="Inter"))
             st.plotly_chart(fig2, use_container_width=True)
 
-        # -------- timeline + top --------
         section_title("🕓 Atividade Recente")
 
         t1, t2 = st.columns([1.4, 1])
         with t1:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown("##### Últimas movimentações")
+            st.markdown('<div class="card"><h4>📋 Últimas movimentações</h4>', unsafe_allow_html=True)
             if mov.empty:
                 st.caption("Sem movimentos.")
             else:
+                st.markdown('<div class="timeline">', unsafe_allow_html=True)
                 for _, r in mov.head(6).iterrows():
-                    cor = {"Entrada":"#16a34a","Saída":"#C73E1D",
-                           "Eliminação":"#6b7280","Edição":"#F18F01"}.get(r["tipo"], "#2E86AB")
-                    dt = pd.to_datetime(r["data"]).strftime("%d/%m %H:%M") if r["data"] else ""
+                    cor = {"Entrada":"#10b981","Saída":"#ef4444",
+                           "Eliminação":"#94a3b8","Edição":"#f59e0b"}.get(r["tipo"], "#6366f1")
+                    dt = pd.to_datetime(r["data"]).strftime("%d/%m · %H:%M") if r["data"] else ""
                     st.markdown(f"""
-                    <div class="timeline">
-                        <div class="tl-item" style="--dot:{cor}">
-                            <div class="t">{dt} · {badge(r['tipo'])}</div>
-                            <div class="h">{r['item']}</div>
-                            <div class="d">{r['quantidade']} un · {r.get('pessoa') or '—'}</div>
-                        </div>
+                    <div class="tl-item" style="--dot:{cor}">
+                        <div class="t">{dt} {badge(r['tipo'])}</div>
+                        <div class="h">{r['item']}</div>
+                        <div class="d">📦 {r['quantidade']} un · 👤 {r.get('pessoa') or '—'}</div>
                     </div>
                     """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with t2:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown("##### 🏆 Top 5 — mais em stock")
+            st.markdown('<div class="card"><h4>🏆 Top 5 em stock</h4>', unsafe_allow_html=True)
             top = inv.nlargest(5, "quantidade")[["item", "categoria", "quantidade"]]
             medals = ["🥇","🥈","🥉","4️⃣","5️⃣"]
             for i, (_, r) in enumerate(top.iterrows()):
                 st.markdown(f"""
-                <div style="display:flex;justify-content:space-between;
-                            padding:.5rem .3rem;border-bottom:1px solid #f1f5f9">
-                    <div><b>{medals[i]}</b> {r['item']}
-                        <span style="color:#6b7280;font-size:.8rem">· {r['categoria']}</span></div>
-                    <div style="font-weight:700;color:#2E86AB">{int(r['quantidade'])}</div>
+                <div class="rank-row">
+                    <div style="display:flex;align-items:center">
+                        <span class="medal">{medals[i]}</span>
+                        <div>
+                            <div style="font-weight:700;color:#0f172a">{r['item']}</div>
+                            <div style="font-size:.75rem;color:#94a3b8">{r['categoria']}</div>
+                        </div>
+                    </div>
+                    <div class="val">{int(r['quantidade'])}</div>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # -------- inventário --------
         section_title("📋 Inventário Completo")
-        col_t, col_p = st.columns([3, 1])
+        _, col_p = st.columns([3, 1])
         with col_p:
             botao_pdf(
                 renomear(inv.drop(columns=["id","_status"], errors="ignore")),
@@ -624,7 +781,7 @@ if menu == "📊  Dashboard":
 # 2. REGISTAR DOAÇÃO
 # =========================================================
 elif menu == "📦  Registar Doação":
-    section_title("📦 Registar Nova Doação ou Entrada")
+    section_title("📦 Registar Nova Doação")
 
     with st.form("form_doacao", clear_on_submit=True):
         c1, c2 = st.columns(2)
@@ -633,7 +790,7 @@ elif menu == "📦  Registar Doação":
             categoria = st.selectbox("Categoria *", CATEGORIAS_PADRAO)
             quantidade = st.number_input("Quantidade *", min_value=1, step=1, value=1)
             estoque_minimo = st.number_input(
-                "Estoque mínimo (alerta)", min_value=0, step=1, value=5,
+                "Estoque mínimo", min_value=0, step=1, value=5,
                 help="Avisa quando o stock ficar abaixo deste valor.")
         with c2:
             tem_val = st.checkbox("Este item tem validade?", value=True)
@@ -763,7 +920,7 @@ elif menu == "📤  Dar Baixa":
                 destino = st.text_input("Destino / Beneficiário")
             with c2:
                 obs = st.text_area("Observações", height=100)
-            ok = st.form_submit_button("📤 Confirmar", use_container_width=True)
+            ok = st.form_submit_button("📤 Confirmar Saída", use_container_width=True)
             if ok:
                 s, m = dar_baixa(iid, int(qtd), destino, obs)
                 st.success(f"✅ {m}") if s else st.error(f"❌ {m}")
@@ -785,13 +942,13 @@ elif menu == "⚠️  Alertas de Validade":
         sem = df[df["_dt"].isna()]
 
         c1, c2, c3 = st.columns(3)
-        c1.markdown(kpi_card("🚫","Vencidos",len(venc),"#C73E1D"), unsafe_allow_html=True)
-        c2.markdown(kpi_card("⚠️",f"A vencer ({DIAS_ALERTA}d)",len(aven),"#F18F01"), unsafe_allow_html=True)
-        c3.markdown(kpi_card("❔","Sem validade",len(sem),"#6A4C93"), unsafe_allow_html=True)
+        c1.markdown(kpi_card("🚫","Vencidos",len(venc),GRAD["vermelho"]), unsafe_allow_html=True)
+        c2.markdown(kpi_card("⚠️",f"A vencer ({DIAS_ALERTA}d)",len(aven),GRAD["laranja"]), unsafe_allow_html=True)
+        c3.markdown(kpi_card("❔","Sem validade",len(sem),GRAD["roxo"]), unsafe_allow_html=True)
 
         st.divider()
         if not venc.empty:
-            st.error(f"🚫 **{len(venc)} lote(s) vencido(s)**")
+            st.error(f"🚫 **{len(venc)} lote(s) vencido(s)** — retirar do stock!")
             render_tabela(venc.drop(columns=["_dt"]))
         if not aven.empty:
             st.warning(f"⚠️ **{len(aven)} lote(s) a vencer**")
@@ -848,9 +1005,9 @@ elif menu == "👥  Doadores":
                 .sort_values("Unidades", ascending=False))
 
             c1, c2, c3 = st.columns(3)
-            c1.markdown(kpi_card("👥","Total doadores",len(resumo),"#2E86AB"), unsafe_allow_html=True)
-            c2.markdown(kpi_card("📦","Unidades doadas",int(resumo["Unidades"].sum()),"#16a34a"), unsafe_allow_html=True)
-            c3.markdown(kpi_card("📥","Doações totais",int(resumo["Doações"].sum()),"#6A4C93"), unsafe_allow_html=True)
+            c1.markdown(kpi_card("👥","Total doadores",len(resumo),GRAD["azul"]), unsafe_allow_html=True)
+            c2.markdown(kpi_card("📦","Unidades doadas",int(resumo["Unidades"].sum()),GRAD["verde"]), unsafe_allow_html=True)
+            c3.markdown(kpi_card("📥","Doações totais",int(resumo["Doações"].sum()),GRAD["roxo"]), unsafe_allow_html=True)
 
             st.divider()
             col_a, col_b = st.columns([1,1])
@@ -858,11 +1015,14 @@ elif menu == "👥  Doadores":
                 st.markdown("##### 🏆 Top 10 doadores")
                 top10 = resumo.head(10)
                 fig = px.bar(top10, x="Unidades", y="Doador", orientation="h",
-                    color="Unidades", color_continuous_scale="Blues", text="Unidades")
-                fig.update_layout(height=400, showlegend=False, coloraxis_showscale=False,
+                    color="Unidades",
+                    color_continuous_scale=["#c7d2fe","#6366f1","#a855f7","#ec4899"],
+                    text="Unidades")
+                fig.update_layout(height=420, showlegend=False, coloraxis_showscale=False,
                     margin=dict(l=0,r=0,t=10,b=0), yaxis=dict(autorange="reversed"),
-                    paper_bgcolor="white", plot_bgcolor="rgba(0,0,0,0)")
-                fig.update_traces(textposition="outside")
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Inter"))
+                fig.update_traces(textposition="outside", marker_line_width=0)
                 st.plotly_chart(fig, use_container_width=True)
             with col_b:
                 st.markdown("##### 📋 Ranking completo")
@@ -898,10 +1058,12 @@ elif menu == "📈  Relatórios":
             fluxo = (df.groupby(["_mes","tipo"])["quantidade"].sum()
                      .reset_index().rename(columns={"_mes":"Mês","tipo":"Tipo","quantidade":"Qtd"}))
             fig = px.bar(fluxo, x="Mês", y="Qtd", color="Tipo", barmode="group",
-                color_discrete_map={"Entrada":"#2E86AB","Saída":"#C73E1D",
-                                    "Eliminação":"#999","Edição":"#F18F01"}, text="Qtd")
-            fig.update_layout(height=420, margin=dict(l=0,r=0,t=10,b=0),
-                paper_bgcolor="white", plot_bgcolor="rgba(0,0,0,0)")
+                color_discrete_map={"Entrada":"#10b981","Saída":"#ef4444",
+                                    "Eliminação":"#94a3b8","Edição":"#f59e0b"}, text="Qtd")
+            fig.update_layout(height=440, margin=dict(l=0,r=0,t=10,b=0),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter"))
+            fig.update_traces(textposition="outside", marker_line_width=0)
             st.plotly_chart(fig, use_container_width=True)
             st.dataframe(fluxo, use_container_width=True, hide_index=True)
 
@@ -909,21 +1071,24 @@ elif menu == "📈  Relatórios":
             por_cat = (df[df["tipo"]=="Entrada"].groupby("categoria")["quantidade"]
                        .sum().reset_index().sort_values("quantidade", ascending=True))
             fig = px.bar(por_cat, x="quantidade", y="categoria", orientation="h",
-                color="quantidade", color_continuous_scale="Greens", text="quantidade")
-            fig.update_layout(height=420, showlegend=False, coloraxis_showscale=False,
+                color="quantidade",
+                color_continuous_scale=["#bbf7d0","#10b981","#059669","#065f46"],
+                text="quantidade")
+            fig.update_layout(height=440, showlegend=False, coloraxis_showscale=False,
                 margin=dict(l=0,r=0,t=10,b=0), xaxis_title="", yaxis_title="",
-                paper_bgcolor="white", plot_bgcolor="rgba(0,0,0,0)")
-            fig.update_traces(textposition="outside")
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter"))
+            fig.update_traces(textposition="outside", marker_line_width=0)
             st.plotly_chart(fig, use_container_width=True)
 
         with t3:
             ent = df[df["tipo"]=="Entrada"]; sai = df[df["tipo"]=="Saída"]
             c1, c2, c3, c4 = st.columns(4)
-            c1.markdown(kpi_card("📥","Entradas",int(ent["quantidade"].sum()),"#16a34a"), unsafe_allow_html=True)
-            c2.markdown(kpi_card("📤","Saídas",int(sai["quantidade"].sum()),"#C73E1D"), unsafe_allow_html=True)
-            c3.markdown(kpi_card("🕓","Movimentos",len(df),"#6A4C93"), unsafe_allow_html=True)
+            c1.markdown(kpi_card("📥","Entradas",int(ent["quantidade"].sum()),GRAD["verde"]), unsafe_allow_html=True)
+            c2.markdown(kpi_card("📤","Saídas",int(sai["quantidade"].sum()),GRAD["vermelho"]), unsafe_allow_html=True)
+            c3.markdown(kpi_card("🕓","Movimentos",len(df),GRAD["roxo"]), unsafe_allow_html=True)
             c4.markdown(kpi_card("📦","Stock atual",
-                int(inv["quantidade"].sum()) if not inv.empty else 0,"#F18F01"), unsafe_allow_html=True)
+                int(inv["quantidade"].sum()) if not inv.empty else 0,GRAD["laranja"]), unsafe_allow_html=True)
 
             st.divider()
             st.markdown("##### Resumo por mês")
