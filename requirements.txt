@@ -1,6 +1,8 @@
 streamlit
-st-supabase-connection
-supabase
 pandas
-reportlab
 plotly
+st-supabase-connection
+reportlab
+uvicorn
+rich
+pyarrow==24.0.0
