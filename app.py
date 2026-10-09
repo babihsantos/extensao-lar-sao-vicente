@@ -18,223 +18,152 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-CATEGORIAS = [
-    "Alimentação",
-    "Higiene Pessoal",
-    "Limpeza",
-    "Medicamentos",
-    "Vestuário",
-    "Outros",
-]
+CATEGORIAS = ["Alimentação", "Higiene Pessoal", "Limpeza",
+              "Medicamentos", "Vestuário", "Outros"]
 DIAS_ALERTA = 30
 
 conn = st.connection("supabase_connection", type=SupabaseConnection)
 
 # =========================================================
-# CSS — LAYOUT ESTOCAPRO
+# CSS
 # =========================================================
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; }
+.stApp { background: #f1f5f9; }
+.block-container { padding: 1rem 2.2rem 2.4rem 2.2rem; max-width: 1500px; }
+header[data-testid="stHeader"] { background: transparent; height: 0; }
+#MainMenu, footer { visibility: hidden; }
 
-    html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; }
+[data-testid="stSidebar"] { background: #0b1220; border-right: none; min-width: 268px; }
+[data-testid="stSidebar"] > div { background: #0b1220; }
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: .15rem; }
 
-    .stApp { background: #f1f5f9; }
-    .block-container { padding: 1rem 2.2rem 2.4rem 2.2rem; max-width: 1500px; }
+.sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 10px 8px 26px 8px; }
+.logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 11px; display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; box-shadow: 0 6px 16px rgba(16,185,129,.35);
+}
+.logo-title { color: #fff; font-weight: 700; font-size: 1.08rem; line-height: 1.1; }
+.logo-sub { color: #64748b; font-size: .72rem; margin-top: 3px; }
 
-    header[data-testid="stHeader"] { background: transparent; height: 0; }
-    #MainMenu, footer { visibility: hidden; }
+[data-testid="stSidebar"] [role="radiogroup"] { gap: 3px; }
+[data-testid="stSidebar"] [role="radiogroup"] > label {
+    padding: 10px 14px !important; border-radius: 10px; margin: 1px 0;
+    color: #94a3b8 !important; font-weight: 500; font-size: .9rem;
+    transition: all .15s ease; cursor: pointer; width: 100%;
+}
+[data-testid="stSidebar"] [role="radiogroup"] > label:hover {
+    background: #16202f; color: #e2e8f0 !important;
+}
+[data-testid="stSidebar"] [role="radiogroup"] > label > div:first-child { display: none; }
+[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) {
+    background: linear-gradient(90deg, #065f46 0%, #059669 100%);
+    color: #fff !important; box-shadow: 0 6px 16px rgba(5,150,105,.28);
+}
 
-    /* ===================== SIDEBAR ===================== */
-    [data-testid="stSidebar"] {
-        background: #0b1220;
-        border-right: none;
-        min-width: 268px;
-    }
-    [data-testid="stSidebar"] > div { background: #0b1220; }
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: .15rem; }
+.status-card {
+    background: #101a2c; border: 1px solid #1e293b;
+    border-radius: 14px; padding: 14px 16px; margin-top: 26px;
+}
+.status-row { color: #10b981; font-weight: 600; font-size: .85rem;
+              display: flex; align-items: center; gap: 8px; }
+.status-row .dot { width: 8px; height: 8px; border-radius: 50%;
+                   background: #10b981; box-shadow: 0 0 10px #10b981; }
+.status-sub { color: #64748b; font-size: .72rem; margin-top: 8px; line-height: 1.55; }
 
-    .sidebar-logo {
-        display: flex; align-items: center; gap: 12px;
-        padding: 10px 8px 26px 8px;
-    }
-    .logo-icon {
-        width: 40px; height: 40px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        border-radius: 11px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.15rem;
-        box-shadow: 0 6px 16px rgba(16,185,129,.35);
-    }
-    .logo-title { color: #fff; font-weight: 700; font-size: 1.08rem; line-height: 1.1; letter-spacing: -.2px; }
-    .logo-sub { color: #64748b; font-size: .72rem; margin-top: 3px; }
+.stTextInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {
+    border-radius: 10px !important; border: 1px solid #e2e8f0 !important;
+    background: #fff !important; font-size: .9rem !important;
+}
+.topbar-user { display: flex; justify-content: flex-end; align-items: center;
+               gap: 14px; padding-top: 2px; }
+.bell { position: relative; font-size: 1.25rem; }
+.bell::after {
+    content: ""; position: absolute; top: -1px; right: -1px;
+    width: 8px; height: 8px; background: #ef4444;
+    border-radius: 50%; border: 2px solid #f1f5f9;
+}
+.avatar { width: 38px; height: 38px; border-radius: 50%;
+          background: #0f172a; color: #fff; display: flex;
+          align-items: center; justify-content: center;
+          font-weight: 700; font-size: .9rem; }
+.user-name { font-weight: 600; font-size: .85rem; color: #0f172a; line-height: 1.1; }
+.user-role { font-size: .72rem; color: #94a3b8; }
 
-    /* Nav radio como itens */
-    [data-testid="stSidebar"] [role="radiogroup"] { gap: 3px; }
-    [data-testid="stSidebar"] [role="radiogroup"] > label {
-        padding: 10px 14px !important;
-        border-radius: 10px;
-        margin: 1px 0;
-        color: #94a3b8 !important;
-        font-weight: 500;
-        font-size: .9rem;
-        transition: all .15s ease;
-        cursor: pointer;
-        width: 100%;
-    }
-    [data-testid="stSidebar"] [role="radiogroup"] > label:hover {
-        background: #16202f;
-        color: #e2e8f0 !important;
-    }
-    [data-testid="stSidebar"] [role="radiogroup"] > label > div:first-child { display: none; }
-    [data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) {
-        background: linear-gradient(90deg, #065f46 0%, #059669 100%);
-        color: #fff !important;
-        box-shadow: 0 6px 16px rgba(5,150,105,.28);
-    }
+.page-title { font-size: 1.65rem; font-weight: 700; color: #0f172a;
+              margin: 0; letter-spacing: -.3px; }
+.page-sub { color: #64748b; font-size: .9rem; margin-top: 4px; }
 
-    /* Cartão de status */
-    .status-card {
-        background: #101a2c;
-        border: 1px solid #1e293b;
-        border-radius: 14px;
-        padding: 14px 16px;
-        margin-top: 26px;
-    }
-    .status-row {
-        color: #10b981; font-weight: 600; font-size: .85rem;
-        display: flex; align-items: center; gap: 8px;
-    }
-    .status-row .dot {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: #10b981; box-shadow: 0 0 10px #10b981;
-    }
-    .status-sub { color: #64748b; font-size: .72rem; margin-top: 8px; line-height: 1.55; }
+.metric-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+    padding: 18px 20px; display: flex; align-items: flex-start; gap: 14px;
+    height: 100%; transition: all .2s ease;
+}
+.metric-card:hover { box-shadow: 0 8px 24px rgba(15,23,42,.07); transform: translateY(-1px); }
+.metric-icon { width: 46px; height: 46px; border-radius: 12px;
+               display: flex; align-items: center; justify-content: center;
+               font-size: 1.25rem; flex-shrink: 0; }
+.metric-label { font-size: .82rem; color: #64748b; font-weight: 500; margin-bottom: 6px; }
+.metric-value { font-size: 1.55rem; color: #0f172a; font-weight: 700;
+                line-height: 1.15; letter-spacing: -.5px; }
+.metric-delta { font-size: .75rem; font-weight: 600; margin-top: 8px; }
+.metric-delta span { color: #94a3b8; font-weight: 400; }
 
-    /* ===================== TOP BAR ===================== */
-    .stTextInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] > div {
-        border-radius: 10px !important;
-        border: 1px solid #e2e8f0 !important;
-        background: #fff !important;
-        font-size: .9rem !important;
-    }
-    .topbar-user {
-        display: flex; justify-content: flex-end; align-items: center;
-        gap: 14px; padding-top: 2px;
-    }
-    .bell { position: relative; font-size: 1.25rem; }
-    .bell::after {
-        content: ""; position: absolute; top: -1px; right: -1px;
-        width: 8px; height: 8px; background: #ef4444;
-        border-radius: 50%; border: 2px solid #f1f5f9;
-    }
-    .avatar {
-        width: 38px; height: 38px; border-radius: 50%;
-        background: #0f172a; color: #fff;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: .9rem;
-    }
-    .user-name { font-weight: 600; font-size: .85rem; color: #0f172a; line-height: 1.1; }
-    .user-role { font-size: .72rem; color: #94a3b8; }
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #fff; border: 1px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] > div { padding: 10px 6px; }
+.card-title { font-size: 1rem; font-weight: 700; color: #0f172a;
+              display: flex; align-items: center; gap: 8px; margin: 0 0 4px 0; }
+.card-title .ic { color: #059669; }
 
-    /* ===================== HEADER PÁGINA ===================== */
-    .page-title { font-size: 1.65rem; font-weight: 700; color: #0f172a; margin: 0; letter-spacing: -.3px; }
-    .page-sub { color: #64748b; font-size: .9rem; margin-top: 4px; }
+.stButton > button, .stDownloadButton > button { border-radius: 10px; font-weight: 600; }
+.stButton > button[kind="primary"], .stDownloadButton > button {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff; border: none; box-shadow: 0 6px 16px rgba(5,150,105,.22);
+}
+.stButton > button[kind="primary"]:hover, .stDownloadButton > button:hover {
+    background: linear-gradient(135deg, #047857, #059669);
+}
 
-    /* ===================== METRIC CARDS ===================== */
-    .metric-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 18px 20px;
-        display: flex; align-items: flex-start; gap: 14px;
-        height: 100%;
-        transition: all .2s ease;
-    }
-    .metric-card:hover { box-shadow: 0 8px 24px rgba(15,23,42,.07); transform: translateY(-1px); }
-    .metric-icon {
-        width: 46px; height: 46px; border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.25rem; flex-shrink: 0;
-    }
-    .metric-label { font-size: .82rem; color: #64748b; font-weight: 500; margin-bottom: 6px; }
-    .metric-value { font-size: 1.55rem; color: #0f172a; font-weight: 700; line-height: 1.15; letter-spacing: -.5px; }
-    .metric-delta { font-size: .75rem; font-weight: 600; margin-top: 8px; }
-    .metric-delta span { color: #94a3b8; font-weight: 400; }
+[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
 
-    /* ===================== CARDS / CONTAINERS ===================== */
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: #fff;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 16px !important;
-    }
-    [data-testid="stVerticalBlockBorderWrapper"] > div { padding: 10px 6px; }
-
-    .card-title {
-        font-size: 1rem; font-weight: 700; color: #0f172a;
-        display: flex; align-items: center; gap: 8px;
-        margin: 0 0 4px 0;
-    }
-    .card-title .ic { color: #059669; }
-
-    /* ===================== BUTTONS ===================== */
-    .stButton > button, .stDownloadButton > button {
-        border-radius: 10px; font-weight: 600;
-        transition: all .15s ease;
-    }
-    .stButton > button[kind="primary"], .stDownloadButton > button {
-        background: linear-gradient(135deg, #059669, #10b981);
-        color: #fff; border: none;
-        box-shadow: 0 6px 16px rgba(5,150,105,.22);
-    }
-    .stButton > button[kind="primary"]:hover, .stDownloadButton > button:hover {
-        background: linear-gradient(135deg, #047857, #059669);
-        box-shadow: 0 8px 20px rgba(5,150,105,.32);
-    }
-
-    /* ===================== DATAFRAMES ===================== */
-    [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
-
-    /* ===================== ATIVIDADES ===================== */
-    .activity {
-        display: flex; align-items: flex-start; gap: 12px;
-        padding: 10px 4px;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    .activity:last-child { border-bottom: none; }
-    .activity-icon {
-        width: 34px; height: 34px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: .95rem; flex-shrink: 0;
-    }
-    .activity-title { font-size: .85rem; font-weight: 600; color: #0f172a; }
-    .activity-sub { font-size: .75rem; color: #64748b; margin-top: 2px; }
-    .activity-time { font-size: .72rem; color: #94a3b8; margin-left: auto; white-space: nowrap; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+.activity { display: flex; align-items: flex-start; gap: 12px;
+            padding: 10px 4px; border-bottom: 1px solid #f1f5f9; }
+.activity:last-child { border-bottom: none; }
+.activity-icon { width: 34px; height: 34px; border-radius: 50%;
+                 display: flex; align-items: center; justify-content: center;
+                 font-size: .95rem; flex-shrink: 0; }
+.activity-title { font-size: .85rem; font-weight: 600; color: #0f172a; }
+.activity-sub { font-size: .75rem; color: #64748b; margin-top: 2px; }
+.activity-time { font-size: .72rem; color: #94a3b8; margin-left: auto; white-space: nowrap; }
+</style>
+""", unsafe_allow_html=True)
 
 # =========================================================
 # BANCO DE DADOS
 # =========================================================
 @st.cache_data(ttl=60)
 def carregar_inventario() -> pd.DataFrame:
-    resposta = conn.table("inventario").select("*").order("categoria").order("item").execute()
-    return pd.DataFrame(resposta.data)
+    r = conn.table("inventario").select("*").order("categoria").order("item").execute()
+    return pd.DataFrame(r.data)
 
 @st.cache_data(ttl=60)
 def carregar_movimentos() -> pd.DataFrame:
-    resposta = conn.table("movimentos").select("*").order("data", desc=True).execute()
-    return pd.DataFrame(resposta.data)
+    r = conn.table("movimentos").select("*").order("data", desc=True).execute()
+    return pd.DataFrame(r.data)
 
 def registar_entrada(item, categoria, quantidade, validade, doador):
     validade_str = str(validade) if validade else None
-    resposta = conn.table("inventario").select("id, quantidade").eq("item", item).eq("validade", validade_str).execute()
-    if resposta.data:
-        item_id = resposta.data[0]['id']
-        nova_qtd = resposta.data[0]['quantidade'] + quantidade
+    r = conn.table("inventario").select("id, quantidade").eq("item", item).eq("validade", validade_str).execute()
+    if r.data:
+        item_id = r.data[0]['id']
+        nova_qtd = r.data[0]['quantidade'] + quantidade
         conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
     else:
         conn.table("inventario").insert({
@@ -259,12 +188,12 @@ def registar_entrada(item, categoria, quantidade, validade, doador):
     st.cache_data.clear()
 
 def dar_baixa(item_id, quantidade, destino, observacoes):
-    resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
-    if not resposta.data:
+    r = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
+    if not r.data:
         return False, "Item não encontrado."
-    item = resposta.data[0]['item']
-    categoria = resposta.data[0]['categoria']
-    stock_atual = resposta.data[0]['quantidade']
+    item = r.data[0]['item']
+    categoria = r.data[0]['categoria']
+    stock_atual = r.data[0]['quantidade']
     if quantidade > stock_atual:
         return False, f"Stock insuficiente (disponível: {stock_atual})."
     nova_qtd = stock_atual - quantidade
@@ -286,12 +215,12 @@ def dar_baixa(item_id, quantidade, destino, observacoes):
     return True, "Baixa registada com sucesso."
 
 def apagar_item(item_id):
-    resposta = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
-    if not resposta.data:
+    r = conn.table("inventario").select("item, categoria, quantidade").eq("id", item_id).execute()
+    if not r.data:
         return False, "Item não encontrado."
-    item = resposta.data[0]['item']
-    categoria = resposta.data[0]['categoria']
-    qtd = resposta.data[0]['quantidade']
+    item = r.data[0]['item']
+    categoria = r.data[0]['categoria']
+    qtd = r.data[0]['quantidade']
     conn.table("inventario").delete().eq("id", item_id).execute()
     conn.table("movimentos").insert({
         "id": str(uuid.uuid4()),
@@ -323,7 +252,8 @@ def _registar_fonte_unicode():
                 continue
     return "Helvetica"
 
-def _fmt(v): return "" if pd.isna(v) else str(v)
+def _fmt(v):
+    return "" if pd.isna(v) else str(v)
 
 def gerar_pdf(df, titulo, subtitulo=""):
     from reportlab.lib import colors
@@ -331,8 +261,10 @@ def gerar_pdf(df, titulo, subtitulo=""):
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
     from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=15*mm, rightMargin=15*mm,
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            leftMargin=15*mm, rightMargin=15*mm,
                             topMargin=15*mm, bottomMargin=15*mm, title=titulo)
     fonte = _registar_fonte_unicode()
     estilos = getSampleStyleSheet()
@@ -341,7 +273,8 @@ def gerar_pdf(df, titulo, subtitulo=""):
     s_style = ParagraphStyle("S", parent=estilos["Normal"], fontName=fonte, fontSize=9,
                              textColor=colors.HexColor("#64748b"), spaceAfter=2)
     story = [Paragraph(titulo, t_style)]
-    if subtitulo: story.append(Paragraph(subtitulo, s_style))
+    if subtitulo:
+        story.append(Paragraph(subtitulo, s_style))
     story.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}", s_style))
     story.append(Spacer(1, 6 * mm))
     if df.empty:
@@ -368,25 +301,33 @@ def botao_pdf(df, titulo, subtitulo, nome_ficheiro):
         with st.spinner("Gerando PDF..."):
             st.session_state[chave] = gerar_pdf(df, titulo, subtitulo)
     if chave in st.session_state:
-        st.download_button("⬇️ Descarregar PDF", data=st.session_state[chave],
-                           file_name=nome_ficheiro, mime="application/pdf", use_container_width=True)
+        st.download_button("⬇️ Descarregar PDF",
+                           data=st.session_state[chave],
+                           file_name=nome_ficheiro, mime="application/pdf",
+                           use_container_width=True)
 
 # =========================================================
 # HELPERS
 # =========================================================
 def status_validade(v):
-    if not v or pd.isna(v): return "Sem validade"
-    try: d = pd.to_datetime(v).date()
-    except Exception: return "Inválida"
+    if not v or pd.isna(v):
+        return "Sem validade"
+    try:
+        d = pd.to_datetime(v).date()
+    except Exception:
+        return "Inválida"
     hoje = date.today()
-    if d < hoje: return "Vencido"
-    if d <= hoje + timedelta(days=DIAS_ALERTA): return "A vencer"
+    if d < hoje:
+        return "Vencido"
+    if d <= hoje + timedelta(days=DIAS_ALERTA):
+        return "A vencer"
     return "OK"
 
 def renomear(df):
     mapa = {"item": "Item", "categoria": "Categoria", "quantidade": "Qtd",
             "validade": "Validade", "doador": "Doador", "data_entrada": "Data Entrada",
-            "data": "Data/Hora", "tipo": "Tipo", "pessoa": "Pessoa", "observacoes": "Observações"}
+            "data": "Data/Hora", "tipo": "Tipo", "pessoa": "Pessoa",
+            "observacoes": "Observações"}
     return df.rename(columns={k: v for k, v in mapa.items() if k in df.columns})
 
 def render_tabela(df):
@@ -417,12 +358,6 @@ def metric_card(label, value, delta_text, delta_positive, icon, bg, color):
 # =========================================================
 # SIDEBAR
 # =========================================================
-if "menu_nav" not in st.session_state:
-    st.session_state.menu_nav = "📊 Visão geral"
-
-def goto_novo():
-    st.session_state.menu_nav = "📦 Registar Doação"
-
 with st.sidebar:
     st.markdown("""
         <div class="sidebar-logo">
@@ -439,7 +374,6 @@ with st.sidebar:
         ["📊 Visão geral", "📦 Registar Doação", "🔍 Consultar Inventário",
          "📤 Dar Baixa / Saída", "⚠️ Alertas de Validade",
          "🕓 Histórico", "🗑️ Apagar Item"],
-        key="menu_nav",
         label_visibility="collapsed",
     )
 
@@ -458,10 +392,11 @@ with st.sidebar:
 # =========================================================
 tb1, tb2, tb3 = st.columns([3, 1.1, 1])
 with tb1:
-    st.text_input("busca_global", placeholder="🔍  Buscar produto, categoria, doador...",
-                  label_visibility="collapsed", key="busca_global")
+    busca_global = st.text_input("busca_global",
+                                 placeholder="🔍  Buscar produto, categoria, doador...",
+                                 label_visibility="collapsed")
 with tb2:
-    st.date_input("data_ref", value=date.today(), label_visibility="collapsed", key="data_ref")
+    st.date_input("data_ref", value=date.today(), label_visibility="collapsed")
 with tb3:
     st.markdown("""
         <div class="topbar-user">
@@ -493,17 +428,17 @@ if menu == "📊 Visão geral":
             unsafe_allow_html=True,
         )
     with h2:
-        st.button("＋ Novo produto", type="primary", use_container_width=True, on_click=goto_novo)
+        st.button("＋ Novo produto", type="primary", use_container_width=True,
+                  help="Vá para a página Registar Doação no menu lateral")
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # --- Métricas ---
     total_unidades = int(inv["quantidade"].sum()) if not inv.empty else 0
     itens_distintos = len(inv) if not inv.empty else 0
 
-    inv_v = inv.copy() if not inv.empty else pd.DataFrame()
     vencidos_qtd = a_vencer_qtd = estoque_baixo = 0
-    if not inv_v.empty:
+    if not inv.empty:
+        inv_v = inv.copy()
         inv_v["_st"] = inv_v["validade"].apply(status_validade)
         vencidos_qtd = int(inv_v.loc[inv_v["_st"] == "Vencido", "quantidade"].sum())
         a_vencer_qtd = int(inv_v.loc[inv_v["_st"] == "A vencer", "quantidade"].sum())
@@ -533,7 +468,6 @@ if menu == "📊 Visão geral":
 
     st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
-    # --- Gráficos ---
     g1, g2 = st.columns([1.6, 1])
 
     with g1:
@@ -561,20 +495,21 @@ if menu == "📊 Visão geral":
                         mode="lines+markers",
                         line=dict(color="#059669", width=2.5, shape="spline"),
                         marker=dict(size=7, color="#059669"),
-                        fill="tozeroy",
-                        fillcolor="rgba(16,185,129,0.12)",
+                        fill="tozeroy", fillcolor="rgba(16,185,129,0.12)",
                         hovertemplate="%{x|%d/%m}<br>%{y} un.<extra></extra>",
                     ))
                     fig.update_layout(
                         height=280, margin=dict(l=10, r=10, t=10, b=10),
-                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
                         xaxis=dict(showgrid=False, tickformat="%d/%m",
                                    tickfont=dict(color="#94a3b8", size=11)),
                         yaxis=dict(showgrid=True, gridcolor="#f1f5f9",
                                    tickfont=dict(color="#94a3b8", size=11)),
                         showlegend=False,
                     )
-                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(fig, use_container_width=True,
+                                    config={"displayModeBar": False})
 
     with g2:
         with st.container(border=True):
@@ -597,15 +532,16 @@ if menu == "📊 Visão geral":
                     paper_bgcolor="rgba(0,0,0,0)",
                     legend=dict(orientation="v", x=1.0, y=0.5,
                                 font=dict(size=11, color="#475569")),
-                    annotations=[dict(text=f"<b>{int(cat.sum())}</b><br><span style='font-size:11px;color:#94a3b8'>unidades</span>",
-                                      x=0.5, y=0.5, showarrow=False,
-                                      font=dict(size=20, color="#0f172a"))],
+                    annotations=[dict(
+                        text=f"<b>{int(cat.sum())}</b><br><span style='font-size:11px;color:#94a3b8'>unidades</span>",
+                        x=0.5, y=0.5, showarrow=False,
+                        font=dict(size=20, color="#0f172a"))],
                 )
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig, use_container_width=True,
+                                config={"displayModeBar": False})
 
     st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
-    # --- Tabela + Atividades ---
     b1, b2 = st.columns([1.6, 1])
 
     with b1:
@@ -616,11 +552,10 @@ if menu == "📊 Visão geral":
                 st.info("Ainda não há produtos. Comece por **📦 Registar Doação**.")
             else:
                 df_show = inv.copy()
-                busca = st.session_state.get("busca_global", "").strip()
-                if busca:
+                if busca_global.strip():
                     df_show = df_show[
-                        df_show["item"].str.lower().str.contains(busca.lower(), na=False)
-                        | df_show["categoria"].str.lower().str.contains(busca.lower(), na=False)
+                        df_show["item"].str.lower().str.contains(busca_global.lower(), na=False)
+                        | df_show["categoria"].str.lower().str.contains(busca_global.lower(), na=False)
                     ]
                 df_show = df_show.head(8)
                 df_show["Estado"] = df_show.apply(
@@ -628,7 +563,7 @@ if menu == "📊 Visão geral":
                 )
                 out = renomear(df_show[["item", "categoria", "quantidade", "Estado"]])
                 st.dataframe(out, use_container_width=True, hide_index=True)
-                st.caption(f"Mostrando {len(df_show)} de {len(inv)} produtos · use a busca acima para filtrar.")
+                st.caption(f"Mostrando {len(df_show)} de {len(inv)} produtos.")
 
     with b2:
         with st.container(border=True):
@@ -646,8 +581,9 @@ if menu == "📊 Visão geral":
                     sinal, cor, bgc = icones.get(r["tipo"], ("•", "#64748b", "#f1f5f9"))
                     try:
                         dt = pd.to_datetime(r["data"])
-                        quando = "Hoje, " + dt.strftime("%H:%M") if dt.date() == date.today() \
-                                 else dt.strftime("%d/%m %H:%M")
+                        quando = ("Hoje, " + dt.strftime("%H:%M")
+                                  if dt.date() == date.today()
+                                  else dt.strftime("%d/%m %H:%M"))
                     except Exception:
                         quando = ""
                     st.markdown(f"""
