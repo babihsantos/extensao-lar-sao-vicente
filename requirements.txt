@@ -1,8 +1,5 @@
-streamlit
-pandas
-plotly
-st-supabase-connection
-reportlab
-uvicorn
-rich
-pyarrow==24.0.0
+streamlit>=1.31
+pandas>=2.0
+reportlab>=4.0
+st-supabase-connection>=1.0
+plotly>=5.18
