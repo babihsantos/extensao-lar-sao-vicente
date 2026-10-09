@@ -1,6 +1,6 @@
-pandas
 streamlit
-reportlab
-sqlalchemy
-psycopg2-binary
 st-supabase-connection
+supabase
+pandas
+reportlab
+plotly
