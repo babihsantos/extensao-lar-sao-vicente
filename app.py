@@ -12,8 +12,8 @@ from st_supabase_connection import SupabaseConnection
 # CONFIGURAÇÃO
 # =========================================================
 st.set_page_config(
-    page_title="EstocaPro — Lar São Vicente",
-    page_icon="📦",
+    page_title="Lar São Vicente — Controle de Doações",
+    page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -361,10 +361,10 @@ def metric_card(label, value, delta_text, delta_positive, icon, bg, color):
 with st.sidebar:
     st.markdown("""
         <div class="sidebar-logo">
-            <div class="logo-icon">📦</div>
+            <div class="logo-icon">🏥</div>
             <div>
-                <div class="logo-title">EstocaPro</div>
-                <div class="logo-sub">Seu estoque, no controle</div>
+                <div class="logo-title">Lar São Vicente</div>
+                <div class="logo-sub">Gestão de doações e inventário</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -401,10 +401,10 @@ with tb3:
     st.markdown("""
         <div class="topbar-user">
             <div class="bell">🔔</div>
-            <div class="avatar">B</div>
+            <div class="avatar">👤</div>
             <div>
-                <div class="user-name">Bárbara</div>
-                <div class="user-role">Administrador</div>
+                <div class="user-name">Administrador</div>
+                <div class="user-role">Sistema</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -424,7 +424,7 @@ if menu == "📊 Visão geral":
     with h1:
         st.markdown(
             '<div class="page-title">Visão geral do estoque</div>'
-            '<div class="page-sub">Acompanhe o desempenho do seu estoque em tempo real.</div>',
+            '<div class="page-sub">Acompanhe o desempenho do estoque do Lar São Vicente em tempo real.</div>',
             unsafe_allow_html=True,
         )
     with h2:
@@ -436,12 +436,10 @@ if menu == "📊 Visão geral":
     total_unidades = int(inv["quantidade"].sum()) if not inv.empty else 0
     itens_distintos = len(inv) if not inv.empty else 0
 
-    vencidos_qtd = a_vencer_qtd = estoque_baixo = 0
+    estoque_baixo = 0
     if not inv.empty:
         inv_v = inv.copy()
         inv_v["_st"] = inv_v["validade"].apply(status_validade)
-        vencidos_qtd = int(inv_v.loc[inv_v["_st"] == "Vencido", "quantidade"].sum())
-        a_vencer_qtd = int(inv_v.loc[inv_v["_st"] == "A vencer", "quantidade"].sum())
         estoque_baixo = int((inv_v["quantidade"] <= 5).sum())
 
     mov_hoje = 0
@@ -670,7 +668,7 @@ elif menu == "🔍 Consultar Inventário":
                                        mime="text/csv", use_container_width=True)
                 with c_pdf:
                     botao_pdf(renomear(df.drop(columns=["id"], errors="ignore")),
-                              "Inventário Filtrado", f"Filtro: {cat}",
+                              "Inventário Filtrado", f"Lar São Vicente · Filtro: {cat}",
                               f"inventario_{date.today()}.pdf")
 
 # ---------------- 4. DAR BAIXA ----------------
