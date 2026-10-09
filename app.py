@@ -40,9 +40,8 @@ except Exception as e:
 
     ```toml
     [connections.supabase_connection]
-   SUPABASE_URL = "https://supabase.com/dashboard/project/fwyqqshydtspmnhuuacs/settings/api-keys/legacy"
-   SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3eXFxc2h5ZHRzcG1uaHV1YWNzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTU3NDkyOSwiZXhwIjoyMTA3MTUwOTI5fQ.E0NY55CFGtoCLOBcKdadyPoQzasV0l1Chh80QW0eyeA"
-
+    SUPABASE_URL = "https://supabase.com/dashboard/project/fwyqqshydtspmnhuuacs/settings/api-keys/legacy"
+    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3eXFxc2h5ZHRzcG1uaHV1YWNzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTU3NDkyOSwiZXhwIjoyMTA3MTUwOTI5fQ.E0NY55CFGtoCLOBcKdadyPoQzasV0l1Chh80QW0eyeA"
 Onde encontrar:
 
 SUPABASE_URL → Supabase → ⚙️ Project Settings → API → Project URL
@@ -80,7 +79,7 @@ return pd.DataFrame(columns=colunas_esperadas)
 =========================================================
 BANCO DE DADOS
 =========================================================
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=600)
 def carregar_inventario() -> pd.DataFrame:
 try:
 r = conn.table("inventario").select("*").execute()
@@ -93,7 +92,7 @@ return df
 except Exception:
 return pd.DataFrame(columns=INV_COLS)
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=600)
 def carregar_movimentos() -> pd.DataFrame:
 try:
 r = conn.table("movimentos").select("*").execute()
@@ -124,6 +123,7 @@ conn.table("inventario").insert({
 "doador": doador.strip() or "Anónimo",
 "data_entrada": datetime.now().isoformat(timespec="seconds"),
 }).execute()
+
 conn.table("movimentos").insert({
 "id": str(uuid.uuid4()),
 "data": datetime.now().isoformat(timespec="seconds"),
@@ -141,16 +141,20 @@ r = conn.table("inventario").select("item, categoria, quantidade").eq("id", item
 dados = getattr(r, "data", None) or []
 if not dados:
 return False, "Item não encontrado."
+
 item = dados[0]['item']
 categoria = dados[0]['categoria']
 stock_atual = dados[0]['quantidade']
+
 if quantidade > stock_atual:
 return False, f"Stock insuficiente (disponível: {stock_atual})."
+
 nova_qtd = stock_atual - quantidade
 if nova_qtd == 0:
 conn.table("inventario").delete().eq("id", item_id).execute()
 else:
 conn.table("inventario").update({"quantidade": nova_qtd}).eq("id", item_id).execute()
+
 conn.table("movimentos").insert({
 "id": str(uuid.uuid4()),
 "data": datetime.now().isoformat(timespec="seconds"),
@@ -169,9 +173,11 @@ r = conn.table("inventario").select("item, categoria, quantidade").eq("id", item
 dados = getattr(r, "data", None) or []
 if not dados:
 return False, "Item não encontrado."
+
 item = dados[0]['item']
 categoria = dados[0]['categoria']
 qtd = dados[0]['quantidade']
+
 conn.table("inventario").delete().eq("id", item_id).execute()
 conn.table("movimentos").insert({
 "id": str(uuid.uuid4()),
@@ -228,6 +234,7 @@ if subtitulo:
 story.append(Paragraph(subtitulo, s_style))
 story.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}", s_style))
 story.append(Spacer(1, 6 * mm))
+
 if df.empty:
 story.append(Paragraph("Sem dados para apresentar.", s_style))
 else:
@@ -243,6 +250,7 @@ tabela.setStyle(TableStyle([
 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
 ]))
 story.append(tabela)
+
 doc.build(story)
 return buffer.getvalue()
 
@@ -525,6 +533,7 @@ value=date.today() + timedelta(days=90),
 disabled=not tem_validade)
 doador = st.text_input("Doador / Origem", placeholder="Nome ou 'Anónimo'")
 submitted = st.form_submit_button("💾 Guardar Registo", use_container_width=True)
+
 if submitted:
 if not item.strip():
 st.warning("⚠️ Preenche o Nome do Item.")
@@ -604,6 +613,7 @@ for _, r in inv.iterrows()}
 escolha = st.selectbox("Selecione o item", list(opcoes.keys()))
 item_id = opcoes[escolha]
 stock_max = int(inv.loc[inv["id"] == item_id, "quantidade"].iloc[0])
+
 with st.form("form_baixa"):
 col1, col2 = st.columns(2)
 with col1:
@@ -613,6 +623,7 @@ destino = st.text_input("Destino / Beneficiário", placeholder="Ex.: Cozinha")
 with col2:
 obs = st.text_area("Observações", height=100)
 ok = st.form_submit_button("📤 Confirmar Saída", use_container_width=True)
+
 if ok:
 sucesso, msg = dar_baixa(item_id, int(qtd), destino, obs)
 if sucesso:
