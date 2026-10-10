@@ -2,6 +2,7 @@ import os
 import uuid
 from datetime import date, datetime, timedelta
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import plotly.express as px
@@ -23,6 +24,13 @@ CATEGORIAS_PADRAO = [
     "Alimentação", "Higiene Pessoal", "Limpeza",
     "Medicamentos", "Vestuário", "Outros",
 ]
+
+# Fuso horário de Brasília
+TZ_BR = ZoneInfo("America/Sao_Paulo")
+
+def agora_br() -> datetime:
+    """Devolve o datetime atual no fuso de Brasília."""
+    return datetime.now(TZ_BR)
 
 conn = st.connection("supabase_connection", type=SupabaseConnection)
 
@@ -431,12 +439,12 @@ def registar_entrada(item, categoria, quantidade, validade, doador, estoque_mini
             "quantidade": quantidade, "validade": vs,
             "doador": doador.strip() or "Anónimo",
             "estoque_minimo": estoque_minimo,
-            "data_entrada": datetime.now().isoformat(timespec="seconds"),
+            "data_entrada": agora_br().isoformat(timespec="seconds"),
         }).execute()
 
     conn.table("movimentos").insert({
         "id": str(uuid.uuid4()),
-        "data": datetime.now().isoformat(timespec="seconds"),
+        "data": agora_br().isoformat(timespec="seconds"),
         "tipo": "Entrada", "item": item.strip(), "categoria": categoria,
         "quantidade": quantidade, "pessoa": doador.strip() or "Anónimo",
         "observacoes": "Doação registada",
@@ -452,7 +460,7 @@ def atualizar_item(iid, item, categoria, qtd, validade, doador, minimo):
     }).eq("id", iid).execute()
     conn.table("movimentos").insert({
         "id": str(uuid.uuid4()),
-        "data": datetime.now().isoformat(timespec="seconds"),
+        "data": agora_br().isoformat(timespec="seconds"),
         "tipo": "Edição", "item": item.strip(), "categoria": categoria,
         "quantidade": qtd, "pessoa": "Sistema", "observacoes": "Item editado",
     }).execute()
@@ -473,7 +481,7 @@ def dar_baixa(iid, qtd, destino, obs):
         conn.table("inventario").update({"quantidade": nova}).eq("id", iid).execute()
     conn.table("movimentos").insert({
         "id": str(uuid.uuid4()),
-        "data": datetime.now().isoformat(timespec="seconds"),
+        "data": agora_br().isoformat(timespec="seconds"),
         "tipo": "Saída", "item": item, "categoria": cat,
         "quantidade": qtd, "pessoa": destino.strip() or "—",
         "observacoes": obs.strip() or "Baixa de stock",
@@ -490,7 +498,7 @@ def apagar_item(iid):
     conn.table("inventario").delete().eq("id", iid).execute()
     conn.table("movimentos").insert({
         "id": str(uuid.uuid4()),
-        "data": datetime.now().isoformat(timespec="seconds"),
+        "data": agora_br().isoformat(timespec="seconds"),
         "tipo": "Eliminação", "item": item, "categoria": cat,
         "quantidade": q, "pessoa": "Sistema", "observacoes": "Item eliminado",
     }).execute()
@@ -535,7 +543,7 @@ def gerar_pdf(df, titulo, subtitulo=""):
                         textColor=colors.HexColor("#666"), spaceAfter=2)
     story = [Paragraph(titulo, ts)]
     if subtitulo: story.append(Paragraph(subtitulo, ss))
-    story.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}", ss))
+    story.append(Paragraph(f"Gerado em {agora_br().strftime('%d/%m/%Y %H:%M')} (Brasília)", ss))
     story.append(Spacer(1, 6*mm))
     if df.empty:
         story.append(Paragraph("Sem dados.", ss))
@@ -625,13 +633,13 @@ def section_title(text):
 
 
 def hero():
-    agora = datetime.now().strftime("%d/%m/%Y · %H:%M")
+    agora = agora_br().strftime("%d/%m/%Y · %H:%M:%S")
     st.markdown(f"""
     <div class="hero">
         <h1>💚 Lar São Vicente de Paulo</h1>
         <div class="sub">Sistema de Controlo de Doações & Inventário · São José do Rio Preto</div>
         <div class="meta">
-            <span>🕐 {agora}</span>
+            <span>🕐 {agora} (Brasília)</span>
             <span>☁️ Sincronizado</span>
             <span>✨ Tempo real</span>
         </div>
@@ -687,6 +695,7 @@ with st.sidebar:
     if st.button("🔄 Recarregar dados", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
+    st.caption(f"🕐 {agora_br().strftime('%H:%M:%S')} · Brasília")
     st.caption("💾 Dados seguros na nuvem")
 
 
@@ -1211,4 +1220,3 @@ elif menu == "🗑️  Apagar Item":
             s, m = apagar_item(opcoes[esc])
             st.success(f"✅ {m}") if s else st.error(f"❌ {m}")
             if s: st.rerun()
-                
