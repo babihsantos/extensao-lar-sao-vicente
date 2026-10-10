@@ -27,7 +27,7 @@ CATEGORIAS_PADRAO = [
 conn = st.connection("supabase_connection", type=SupabaseConnection)
 
 # =========================================================
-# CSS — LAYOUT VIBRANTE
+# CSS — LAYOUT VIBRANTE / TEMA ESCURO
 # =========================================================
 st.markdown(
     """
@@ -36,11 +36,12 @@ st.markdown(
 
     * { font-family: 'Inter', sans-serif; }
 
-    /* ---------- fundo animado ---------- */
+    /* ---------- fundo animado escuro ---------- */
     .stApp {
-        background: linear-gradient(-45deg, #fef3f8, #e0f2fe, #f3e8ff, #dcfce7);
+        background: linear-gradient(-45deg, #0a0a1a, #111827, #1a0b2e, #061a17);
         background-size: 400% 400%;
-        animation: bgShift 18s ease infinite;
+        animation: bgShift 20s ease infinite;
+        color: #e2e8f0;
     }
     @keyframes bgShift {
         0%   { background-position: 0% 50%; }
@@ -51,6 +52,40 @@ st.markdown(
         padding-top: 1.5rem; padding-bottom: 3rem; max-width: 1450px;
     }
     header[data-testid="stHeader"] { background: transparent; }
+
+    /* ---------- texto base ---------- */
+    .stApp p, .stApp span, .stApp label,
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
+        color: #e2e8f0;
+    }
+
+    /* ---------- inputs escuros ---------- */
+    .stTextInput input, .stNumberInput input, .stTextArea textarea,
+    .stDateInput input, .stSelectbox div[data-baseweb="select"] > div,
+    .stMultiSelect div[data-baseweb="select"] > div {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px !important;
+    }
+    .stTextInput input::placeholder, .stTextArea textarea::placeholder {
+        color: #64748b !important;
+    }
+    div[data-baseweb="popover"], div[data-baseweb="menu"] {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+    }
+    div[data-baseweb="menu"] li:hover {
+        background-color: #334155 !important;
+    }
+    [data-testid="stForm"] {
+        background: rgba(30, 41, 59, 0.35);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 20px;
+        padding: 1.2rem 1.4rem;
+        backdrop-filter: blur(20px);
+    }
+    [data-testid="stWidgetLabel"] label { color: #cbd5e1 !important; }
 
     /* ---------- sidebar dark neon ---------- */
     section[data-testid="stSidebar"] {
@@ -91,7 +126,7 @@ st.markdown(
         border-radius: 26px;
         color: #fff;
         margin-bottom: 1.8rem;
-        box-shadow: 0 20px 50px rgba(168,85,247,0.35);
+        box-shadow: 0 20px 50px rgba(168,85,247,0.45);
         overflow: hidden;
     }
     .hero::before {
@@ -118,10 +153,11 @@ st.markdown(
     .hero h1 {
         margin: 0; font-size: 2.3rem; font-weight: 900;
         letter-spacing: -1px; line-height: 1.1; position: relative; z-index: 1;
+        color: #fff;
     }
     .hero .sub {
         opacity: 0.96; margin-top: .55rem; font-size: 1.05rem;
-        font-weight: 500; position: relative; z-index: 1;
+        font-weight: 500; position: relative; z-index: 1; color: #fff;
     }
     .hero .meta {
         margin-top: 1.3rem; font-size: .88rem; font-weight: 600;
@@ -133,17 +169,18 @@ st.markdown(
         padding: .4rem .9rem; border-radius: 999px;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255,255,255,0.2);
+        color: #fff;
     }
 
     /* ---------- KPI CARDS ---------- */
     .kpi {
         position: relative;
-        background: rgba(255,255,255,0.75);
+        background: rgba(30, 41, 59, 0.55);
         backdrop-filter: blur(20px);
         padding: 1.2rem 1.3rem;
         border-radius: 20px;
-        box-shadow: 0 8px 30px rgba(15,23,42,0.08);
-        border: 1px solid rgba(255,255,255,0.9);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        border: 1px solid rgba(148, 163, 184, 0.12);
         transition: all .25s ease;
         overflow: hidden;
         height: 100%;
@@ -154,29 +191,30 @@ st.markdown(
     }
     .kpi:hover {
         transform: translateY(-6px) scale(1.02);
-        box-shadow: 0 18px 45px rgba(15,23,42,0.16);
+        box-shadow: 0 18px 45px rgba(0,0,0,0.6);
+        border-color: rgba(148, 163, 184, 0.25);
     }
     .kpi .icon {
         font-size: 1.9rem; line-height: 1;
-        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.12));
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
     }
     .kpi .label {
-        font-size: .74rem; color: #64748b; font-weight: 700;
+        font-size: .74rem; color: #94a3b8; font-weight: 700;
         text-transform: uppercase; letter-spacing: .8px;
         margin-top: .55rem;
     }
     .kpi .value {
-        font-size: 2rem; font-weight: 900; color: #0f172a;
+        font-size: 2rem; font-weight: 900;
         margin-top: .2rem; line-height: 1.05;
         background: var(--grad, linear-gradient(90deg, #6366f1, #a855f7));
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         background-clip: text;
     }
-    .kpi .delta { font-size: .78rem; color: #94a3b8; margin-top: .35rem; font-weight: 500; }
+    .kpi .delta { font-size: .78rem; color: #64748b; margin-top: .35rem; font-weight: 500; }
 
     /* ---------- section title ---------- */
     .section-title {
-        font-size: 1.35rem; font-weight: 900; color: #0f172a;
+        font-size: 1.35rem; font-weight: 900; color: #f1f5f9;
         margin: 2rem 0 1rem 0; display: flex; align-items: center; gap: .7rem;
         letter-spacing: -0.3px;
     }
@@ -184,22 +222,22 @@ st.markdown(
         content: ""; width: 6px; height: 26px; border-radius: 4px;
         background: linear-gradient(180deg, #6366f1, #ec4899);
         display: inline-block;
-        box-shadow: 0 0 12px rgba(99,102,241,0.6);
+        box-shadow: 0 0 12px rgba(99,102,241,0.8);
     }
 
     /* ---------- card ---------- */
     .card {
-        background: rgba(255,255,255,0.8);
+        background: rgba(30, 41, 59, 0.55);
         backdrop-filter: blur(20px);
         border-radius: 20px; padding: 1.3rem 1.4rem;
-        box-shadow: 0 8px 30px rgba(15,23,42,0.08);
-        border: 1px solid rgba(255,255,255,0.9);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        border: 1px solid rgba(148, 163, 184, 0.12);
         height: 100%;
         transition: all .25s ease;
     }
-    .card:hover { box-shadow: 0 14px 40px rgba(15,23,42,0.12); }
+    .card:hover { box-shadow: 0 14px 40px rgba(0,0,0,0.6); }
     .card h4 {
-        margin: 0 0 .8rem 0; color: #0f172a; font-size: 1.05rem; font-weight: 800;
+        margin: 0 0 .8rem 0; color: #f1f5f9; font-size: 1.05rem; font-weight: 800;
     }
 
     /* ---------- alert cards ---------- */
@@ -207,31 +245,31 @@ st.markdown(
         padding: 1.2rem 1.3rem; border-radius: 18px; margin-bottom: .8rem;
         display: flex; align-items: center; gap: 1.1rem;
         font-weight: 600; position: relative; overflow: hidden;
-        box-shadow: 0 6px 20px rgba(15,23,42,0.06);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         transition: transform .2s;
     }
     .alert:hover { transform: translateY(-3px); }
     .alert .icon {
         font-size: 2.1rem;
-        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
     }
     .alert .count { font-size: 1.6rem; font-weight: 900; line-height: 1; }
-    .alert .txt { font-size: .85rem; font-weight: 500; opacity: .85; margin-top: .15rem; }
+    .alert .txt { font-size: .85rem; font-weight: 500; opacity: .9; margin-top: .15rem; }
     .alert.danger {
-        background: linear-gradient(135deg, #fee2e2, #fecaca);
-        border-left: 6px solid #dc2626; color: #7f1d1d;
+        background: linear-gradient(135deg, rgba(220,38,38,0.25), rgba(127,29,29,0.35));
+        border-left: 6px solid #dc2626; color: #fecaca;
     }
     .alert.warn {
-        background: linear-gradient(135deg, #fef3c7, #fde68a);
-        border-left: 6px solid #f59e0b; color: #78350f;
+        background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(120,53,15,0.35));
+        border-left: 6px solid #f59e0b; color: #fde68a;
     }
     .alert.ok {
-        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-        border-left: 6px solid #16a34a; color: #14532d;
+        background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(20,83,45,0.35));
+        border-left: 6px solid #16a34a; color: #bbf7d0;
     }
     .alert.info {
-        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-        border-left: 6px solid #2563eb; color: #1e3a8a;
+        background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(30,58,138,0.35));
+        border-left: 6px solid #2563eb; color: #bfdbfe;
     }
 
     /* ---------- timeline ---------- */
@@ -243,26 +281,26 @@ st.markdown(
     }
     .tl-item {
         position: relative; margin-bottom: 1rem;
-        background: rgba(255,255,255,0.85);
+        background: rgba(30, 41, 59, 0.55);
         padding: .85rem 1rem; border-radius: 14px;
-        box-shadow: 0 4px 14px rgba(15,23,42,0.06);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.35);
         transition: transform .2s;
-        border: 1px solid rgba(255,255,255,0.9);
+        border: 1px solid rgba(148, 163, 184, 0.12);
     }
     .tl-item:hover { transform: translateX(6px); }
     .tl-item::before {
         content: ""; position: absolute; left: -1.25rem; top: 18px;
         width: 14px; height: 14px; border-radius: 50%;
         background: var(--dot, #6366f1);
-        border: 3px solid #fff;
+        border: 3px solid #0f172a;
         box-shadow: 0 0 0 3px var(--dot, #6366f1), 0 0 16px var(--dot, #6366f1);
     }
     .tl-item .t {
         font-size: .74rem; color: #94a3b8; font-weight: 600;
         text-transform: uppercase; letter-spacing: .5px;
     }
-    .tl-item .h { font-weight: 800; color: #0f172a; margin-top: .2rem; font-size: .95rem; }
-    .tl-item .d { font-size: .82rem; color: #64748b; margin-top: .15rem; }
+    .tl-item .h { font-weight: 800; color: #f1f5f9; margin-top: .2rem; font-size: .95rem; }
+    .tl-item .d { font-size: .82rem; color: #cbd5e1; margin-top: .15rem; }
 
     /* ---------- badge ---------- */
     .badge {
@@ -270,26 +308,27 @@ st.markdown(
         border-radius: 999px; font-size: .72rem; font-weight: 800;
         text-transform: uppercase; letter-spacing: .5px;
     }
-    .badge.in  { background: #dcfce7; color: #14532d; }
-    .badge.out { background: #fee2e2; color: #7f1d1d; }
-    .badge.del { background: #f1f5f9; color: #334155; }
-    .badge.edit{ background: #fef3c7; color: #78350f; }
+    .badge.in  { background: rgba(16,185,129,0.25); color: #6ee7b7; }
+    .badge.out { background: rgba(239,68,68,0.25); color: #fca5a5; }
+    .badge.del { background: rgba(100,116,139,0.25); color: #cbd5e1; }
+    .badge.edit{ background: rgba(245,158,11,0.25); color: #fcd34d; }
 
     /* ---------- ranking ---------- */
     .rank-row {
         display: flex; justify-content: space-between; align-items: center;
-        padding: .7rem .5rem; border-bottom: 1px solid #f1f5f9;
+        padding: .7rem .5rem; border-bottom: 1px solid rgba(148,163,184,0.12);
         transition: background .15s; border-radius: 8px;
     }
-    .rank-row:hover { background: rgba(99,102,241,0.05); }
+    .rank-row:hover { background: rgba(99,102,241,0.12); }
     .rank-row:last-child { border-bottom: none; }
     .rank-row .medal { font-size: 1.3rem; margin-right: .6rem; }
     .rank-row .val {
         font-weight: 900; font-size: 1rem;
-        background: linear-gradient(90deg, #6366f1, #ec4899);
+        background: linear-gradient(90deg, #818cf8, #f472b6);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         background-clip: text;
     }
+    .rank-row div[style*="color:#0f172a"] { color: #f1f5f9 !important; }
 
     /* ---------- botões ---------- */
     .stButton>button, .stDownloadButton>button {
@@ -300,41 +339,57 @@ st.markdown(
     .stButton>button {
         background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
         color: #fff !important;
-        box-shadow: 0 4px 14px rgba(99,102,241,0.3) !important;
+        box-shadow: 0 4px 14px rgba(99,102,241,0.4) !important;
     }
     .stButton>button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 22px rgba(99,102,241,0.45) !important;
+        box-shadow: 0 8px 22px rgba(99,102,241,0.6) !important;
+    }
+    .stDownloadButton>button {
+        background: linear-gradient(135deg, #10b981, #06b6d4) !important;
+        color: #fff !important;
+        box-shadow: 0 4px 14px rgba(16,185,129,0.4) !important;
     }
 
     /* ---------- dataframe ---------- */
     [data-testid="stDataFrame"] {
         border-radius: 16px; overflow: hidden;
-        box-shadow: 0 6px 20px rgba(15,23,42,0.06);
-        border: 1px solid rgba(255,255,255,0.9);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        background: rgba(30, 41, 59, 0.55);
     }
 
     /* ---------- métricas nativas ---------- */
     [data-testid="stMetric"] {
-        background: rgba(255,255,255,0.8);
+        background: rgba(30, 41, 59, 0.55);
         backdrop-filter: blur(20px);
         border-radius: 16px; padding: .9rem 1rem;
-        box-shadow: 0 6px 20px rgba(15,23,42,0.06);
-        border: 1px solid rgba(255,255,255,0.9);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+        border: 1px solid rgba(148, 163, 184, 0.12);
     }
+    [data-testid="stMetricLabel"] { color: #94a3b8 !important; }
+    [data-testid="stMetricValue"] { color: #f1f5f9 !important; }
 
-    /* tabs */
+    /* ---------- tabs ---------- */
     .stTabs [data-baseweb="tab-list"] {
-        gap: .5rem; background: rgba(255,255,255,0.6);
+        gap: .5rem; background: rgba(30, 41, 59, 0.5);
         padding: .4rem; border-radius: 14px;
         backdrop-filter: blur(10px);
     }
     .stTabs [data-baseweb="tab"] {
         border-radius: 10px; font-weight: 700; padding: .5rem 1rem;
+        color: #cbd5e1;
     }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #6366f1, #a855f7) !important;
         color: #fff !important;
+    }
+
+    /* ---------- info / alerts nativos ---------- */
+    [data-testid="stAlert"] {
+        background: rgba(30, 41, 59, 0.7) !important;
+        color: #e2e8f0 !important;
+        border-radius: 14px !important;
     }
     </style>
     """,
@@ -702,10 +757,10 @@ if menu == "📊  Dashboard":
                 margin=dict(l=0, r=0, t=10, b=0),
                 xaxis_title="", yaxis_title="",
                 plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Inter", size=12, color="#334155"),
+                font=dict(family="Inter", size=12, color="#e2e8f0"),
             )
             fig.update_traces(textposition="outside", marker_line_width=0,
-                              textfont=dict(color="#0f172a", size=12))
+                              textfont=dict(color="#f1f5f9", size=12))
             st.plotly_chart(fig, use_container_width=True)
 
         with g2:
@@ -717,8 +772,8 @@ if menu == "📊  Dashboard":
             fig2.update_layout(
                 height=400, margin=dict(l=0, r=0, t=10, b=0),
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Inter", size=12, color="#334155"),
-                legend=dict(orientation="h", y=-0.1, font=dict(size=11)),
+                font=dict(family="Inter", size=12, color="#e2e8f0"),
+                legend=dict(orientation="h", y=-0.1, font=dict(size=11, color="#e2e8f0")),
             )
             fig2.update_traces(textposition="inside", textinfo="percent",
                                textfont=dict(color="#fff", size=13, family="Inter"))
@@ -757,7 +812,7 @@ if menu == "📊  Dashboard":
                     <div style="display:flex;align-items:center">
                         <span class="medal">{medals[i]}</span>
                         <div>
-                            <div style="font-weight:700;color:#0f172a">{r['item']}</div>
+                            <div style="font-weight:700;color:#f1f5f9">{r['item']}</div>
                             <div style="font-size:.75rem;color:#94a3b8">{r['categoria']}</div>
                         </div>
                     </div>
@@ -1021,8 +1076,9 @@ elif menu == "👥  Doadores":
                 fig.update_layout(height=420, showlegend=False, coloraxis_showscale=False,
                     margin=dict(l=0,r=0,t=10,b=0), yaxis=dict(autorange="reversed"),
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(family="Inter"))
-                fig.update_traces(textposition="outside", marker_line_width=0)
+                    font=dict(family="Inter", color="#e2e8f0"))
+                fig.update_traces(textposition="outside", marker_line_width=0,
+                                  textfont=dict(color="#f1f5f9"))
                 st.plotly_chart(fig, use_container_width=True)
             with col_b:
                 st.markdown("##### 📋 Ranking completo")
@@ -1062,8 +1118,9 @@ elif menu == "📈  Relatórios":
                                     "Eliminação":"#94a3b8","Edição":"#f59e0b"}, text="Qtd")
             fig.update_layout(height=440, margin=dict(l=0,r=0,t=10,b=0),
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Inter"))
-            fig.update_traces(textposition="outside", marker_line_width=0)
+                font=dict(family="Inter", color="#e2e8f0"))
+            fig.update_traces(textposition="outside", marker_line_width=0,
+                              textfont=dict(color="#f1f5f9"))
             st.plotly_chart(fig, use_container_width=True)
             st.dataframe(fluxo, use_container_width=True, hide_index=True)
 
@@ -1077,8 +1134,9 @@ elif menu == "📈  Relatórios":
             fig.update_layout(height=440, showlegend=False, coloraxis_showscale=False,
                 margin=dict(l=0,r=0,t=10,b=0), xaxis_title="", yaxis_title="",
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Inter"))
-            fig.update_traces(textposition="outside", marker_line_width=0)
+                font=dict(family="Inter", color="#e2e8f0"))
+            fig.update_traces(textposition="outside", marker_line_width=0,
+                              textfont=dict(color="#f1f5f9"))
             st.plotly_chart(fig, use_container_width=True)
 
         with t3:
@@ -1153,3 +1211,4 @@ elif menu == "🗑️  Apagar Item":
             s, m = apagar_item(opcoes[esc])
             st.success(f"✅ {m}") if s else st.error(f"❌ {m}")
             if s: st.rerun()
+                
